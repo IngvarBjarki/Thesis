@@ -46,9 +46,12 @@ def evaluate(X_train, y_train, X_test, y_test, neural_net, knn):
         pass
         
     if knn:
-        neigh = KNeighborsClassifier(n_neighbors=50)
-        neigh.fit(X_train, y_train)
-        return(neigh.score(X_test, y_test))
+        error_rates = []
+        for i in range(0,100,10):
+            neigh = KNeighborsClassifier(n_neighbors=10)
+            neigh.fit(X_train, y_train)
+            error_rates.append(1-neigh.score(X_test, y_test))
+        return(min(error_rates))
         
     if not neural_net and not knn:
         return("at least one argument must be true, to get neural_net or/and knn predictions")
@@ -83,79 +86,92 @@ elif is_model == 'iris':
 
 
 # set different amount of data here...    
-
-# We check if our data set has even or odd numbers, and decide how to split the data   
-n = len(y)
-if n % 2 == 0:
-    n_half = int(n / 2)
-    # we split the data for the two computers
-    X_train1, X_test1, y_train1, y_test1 = train_test_split(X[:n_half], y[:n_half], test_size=0.1)
-    X_train2, X_test2, y_train2, y_test2 = train_test_split(X[n_half:], y[n_half:], test_size=0.1)
     
-
-else:
-    # if odd, we make the first data set have 1 more record than the second
-    n_half = int((n + 1) / 2)
-    # we split to train and test before we do feature selection
-    X_train1, X_test1, y_train1, y_test1 = train_test_split(X[:n_half], y[:n_half], test_size=0.1)
-    X_train2, X_test2, y_train2, y_test2 = train_test_split(X[n_half:], y[n_half:], test_size=0.1)
+total_amount_of_data = [len(y)/10 for i in range(10)]
+total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
+score_feature_selection = []
+score_without_feature_selection = []
+# We check if our data set has even or odd numbers, and decide how to split the data
+for n in total_amount_of_data_intervals:  
+    #n = len(y)
+    if n % 2 == 0:
+        n_half = int(n / 2)
+        # we split the data for the two computers
+        X_train1, X_test1, y_train1, y_test1 = train_test_split(X[:n_half], y[:n_half], test_size=0.1)
+        X_train2, X_test2, y_train2, y_test2 = train_test_split(X[n_half:], y[n_half:], test_size=0.1)
+        
     
-
-
-################# The heart of the program ############################################
-
-
-theta = [0 for i in range(len(X[0]))]
-num_rounds = 50
-weight_decay = 0.5 # for the lasso regression
-print('starting for loop...')
-for i in range(num_rounds):
-
-    computer_1_gradient = computer_1(X_train1, y_train1, theta, weight_decay )
-    computer_2_gradient = computer_2(X_train2, y_train2, theta, weight_decay )
-    global_gradient = [0.5 * (x + y) for x, y in zip(computer_1_gradient, computer_2_gradient)]
-    theta = global_gradient
-    print('theta', theta)
+    else:
+        # if odd, we make the first data set have 1 more record than the second
+        n_half = int((n + 1) / 2)
+        # we split to train and test before we do feature selection
+        X_train1, X_test1, y_train1, y_test1 = train_test_split(X[:n_half], y[:n_half], test_size=0.1)
+        X_train2, X_test2, y_train2, y_test2 = train_test_split(X[n_half:], y[n_half:], test_size=0.1)
+        
     
-
-
-# check what features to use
-
-threshold = 0.15
-features = [1 if abs(feature) > threshold else 0 for feature in theta ]
-
-# now we remove the feature from the data set.. before we train the ML model
-features_to_remove = [i for i, feature in enumerate(features) if feature == 0]
-X_train1_with_feature_selection = X_train1
-X_test1_with_feature_selection = X_test1
-num_removed = 1
-for i, feature_to_remove in enumerate(features_to_remove):
-    if i > 0:
-        # sincce now the matrix is not as bigg as in the first run
-        feature_to_remove -= num_removed
-        num_removed += 1
-    X_train1_with_feature_selection = np.delete(X_train1_with_feature_selection, feature_to_remove, axis = 1)
-    X_test1_with_feature_selection = np.delete(X_test1_with_feature_selection, feature_to_remove, axis = 1)
-    #print('removed feature', feature_to_remove)
     
-
-
-############################ Evaluate the result by running classifiers from computer 1 ###########################
-############################ on the data with and without the feature selection         ###########################
+    ################# The heart of the program ############################################
     
-print('Lets evalute this shiiiitttt!')
-print(evaluate(X_train1_with_feature_selection, y_train1, X_test1_with_feature_selection, y_test1, False, True))
-print(evaluate(X_train1, y_train1, X_test1, y_test1, False, True))
+    
+    theta = [0 for i in range(len(X[0]))]
+    num_rounds = 50
+    weight_decay = 0.5 # for the lasso regression
+    print('starting for loop...')
+    for i in range(num_rounds):
+    
+        computer_1_gradient = computer_1(X_train1, y_train1, theta, weight_decay )
+        computer_2_gradient = computer_2(X_train2, y_train2, theta, weight_decay )
+        global_gradient = [0.5 * (x + y) for x, y in zip(computer_1_gradient, computer_2_gradient)]
+        theta = global_gradient
+        #print('theta', theta)
+        
+    
+    
+    # check what features to use
+    threshold = 0.05
+    features = [1 if abs(feature) > threshold else 0 for feature in theta ]
+    
+    # now we remove the feature from the data set.. before we train the ML model
+    features_to_remove = [i for i, feature in enumerate(features) if feature == 0]
+    X_train1_with_feature_selection = X_train1
+    X_test1_with_feature_selection = X_test1
+    num_removed = 1
+    for i, feature_to_remove in enumerate(features_to_remove):
+        if i > 0:
+            # sincce now the matrix is not as bigg as in the first run
+            feature_to_remove -= num_removed
+            num_removed += 1
+        X_train1_with_feature_selection = np.delete(X_train1_with_feature_selection, feature_to_remove, axis = 1)
+        X_test1_with_feature_selection = np.delete(X_test1_with_feature_selection, feature_to_remove, axis = 1)
+        #print('removed feature', feature_to_remove)
+        
+    
+    
+    ############################ Evaluate the result by running classifiers from computer 1 ###########################
+    ############################ on the data with and without the feature selection         ###########################
+        
+    print('Lets evalute this shiiiitttt!')
+    #print(evaluate(X_train1_with_feature_selection, y_train1, X_test1_with_feature_selection, y_test1, False, True))
+    #print(evaluate(X_train1, y_train1, X_test1, y_test1, False, True))
+    
+    
+    # use different amount of data to evaluate how well the feature selection is doing
+    
+    ############################# Plot the results ####################################
+    
+    # probably need to do 3 lines per plot - db lasso, just lassso, without feature selection
+    score_feature_selection.append(evaluate(X_train1_with_feature_selection, y_train1, X_test1_with_feature_selection, y_test1, False, True))
+    score_without_feature_selection.append(evaluate(X_train1, y_train1, X_test1, y_test1, False, True))
 
 
-# use different amount of data to evaluate how well the feature selection is doing
 
-############################# Plot the results ####################################
 
-# probably need to do 3 lines per plot - db lasso, just lassso, without feature selection
-
-#plt.plot(score_feature_selection, 'o', color = 'red')
-#plt.plot(score_without_feature_selection, 'o', color = 'blue')
+line_up, = plt.plot(total_amount_of_data_intervals, score_feature_selection, '--o', color = 'red', alpha = 0.6, label = 'With feature selection')
+line_down, = plt.plot(total_amount_of_data_intervals, score_without_feature_selection, '--o', color = 'blue', alpha = 0.6, label = 'Without feature selection')
+plt.legend(handles=[line_up, line_down])
+plt.xlabel('N')
+plt.ylabel('Error rate')
+plt.show()
 
 
 
