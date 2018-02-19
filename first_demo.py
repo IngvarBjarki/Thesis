@@ -8,11 +8,13 @@ Created on Mon Feb 12 18:58:52 2018
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from optimization_algorithms import gradientDescentLasso
+from optimization_algorithms import gradientDescentLasso, gradientDescent
 
 
 
@@ -24,7 +26,8 @@ def computer_1(X, y, theta, weight_decay):
     m = len(y)
     numIterations = 10000
     #print(gradientDescentLasso(X, y, theta, learning_rate, m, numIterations, weight_decay))
-    return(gradientDescentLasso(X, y, theta, learning_rate, m, numIterations, weight_decay))
+    #return(gradientDescentLasso(X, y, theta, learning_rate, m, numIterations, weight_decay))
+    return(gradientDescent(X, y, theta, learning_rate, m, numIterations))
     
 
 def computer_2(X, y, theta, weight_deca):
@@ -35,6 +38,7 @@ def computer_2(X, y, theta, weight_deca):
     numIterations = 10000
     #print(gradientDescentLasso(X, y, theta, learning_rate, m, numIterations, weight_decay))
     return(gradientDescentLasso(X, y, theta, learning_rate, m, numIterations, weight_decay))
+    return(gradientDescent(X, y, theta, learning_rate, m, numIterations))
     
         
 def evaluate(X_train, y_train, X_test, y_test, neural_net, knn):
@@ -43,7 +47,10 @@ def evaluate(X_train, y_train, X_test, y_test, neural_net, knn):
     # if both values are false an information about the function will be stated
     
     if neural_net:
-        pass
+        mlp = MLPClassifier(hidden_layer_sizes=(30,30))
+        mlp.fit(X_train, y_train)
+        error_rate =1 -  mlp.score(X_test, y_test)
+        return(error_rate)        
         
     if knn:
         error_rates = []
@@ -64,7 +71,11 @@ is_model = 'digits' #'iris'
 if is_model == 'digits':    
     digits = datasets.load_digits()
     n_samples = len(digits.images)
-    X = digits.images.reshape((n_samples, -1))
+    X_without_bias = digits.images.reshape((n_samples, -1))
+    # we add bias term in front -- done for the gradient decent
+    _records, _attributes = np.shape(X)
+    X = np.ones((_records, _attributes + 1))
+    X[:,1:] = X_without_bias
     y = digits.target
             
 elif is_model == 'iris':
@@ -86,8 +97,8 @@ elif is_model == 'iris':
 
 
 # set different amount of data here...    
-    
-total_amount_of_data = [len(y)/10 for i in range(10)]
+num_splits = 4    
+total_amount_of_data = [int(len(y)/num_splits) for i in range(num_splits)]
 total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
 score_feature_selection = []
 score_without_feature_selection = []
@@ -114,21 +125,22 @@ for n in total_amount_of_data_intervals:
     
     
     theta = [0 for i in range(len(X[0]))]
-    num_rounds = 50
-    weight_decay = 0.5 # for the lasso regression
-    print('starting for loop...')
+    num_rounds = 100
+    weight_decay = 0.001 # for the lasso regression - they tried values from 0.0001-0.1
+    Gamma = lambda x: np.sign(x)*(abs(x) - weight_decay)
+    print('Iteration n:',n)
     for i in range(num_rounds):
     
         computer_1_gradient = computer_1(X_train1, y_train1, theta, weight_decay )
         computer_2_gradient = computer_2(X_train2, y_train2, theta, weight_decay )
-        global_gradient = [0.5 * (x + y) for x, y in zip(computer_1_gradient, computer_2_gradient)]
+        global_gradient = [Gamma(0.5 * (x + y)) for x, y in zip(computer_1_gradient, computer_2_gradient)]
         theta = global_gradient
         #print('theta', theta)
         
     
     
     # check what features to use
-    threshold = 0.05
+    threshold = 0.0001
     features = [1 if abs(feature) > threshold else 0 for feature in theta ]
     
     # now we remove the feature from the data set.. before we train the ML model
@@ -136,6 +148,7 @@ for n in total_amount_of_data_intervals:
     X_train1_with_feature_selection = X_train1
     X_test1_with_feature_selection = X_test1
     num_removed = 1
+    print('features to remove', features_to_remove)
     for i, feature_to_remove in enumerate(features_to_remove):
         if i > 0:
             # sincce now the matrix is not as bigg as in the first run
@@ -149,23 +162,17 @@ for n in total_amount_of_data_intervals:
     
     ############################ Evaluate the result by running classifiers from computer 1 ###########################
     ############################ on the data with and without the feature selection         ###########################
-        
-    print('Lets evalute this shiiiitttt!')
+    
+    score_feature_selection.append(evaluate(X_train1_with_feature_selection, y_train1, X_test1_with_feature_selection, y_test1, True, False))
+    score_without_feature_selection.append(evaluate(X_train1, y_train1, X_test1, y_test1, True, False))
+    
     #print(evaluate(X_train1_with_feature_selection, y_train1, X_test1_with_feature_selection, y_test1, False, True))
     #print(evaluate(X_train1, y_train1, X_test1, y_test1, False, True))
-    
-    
-    # use different amount of data to evaluate how well the feature selection is doing
-    
-    ############################# Plot the results ####################################
-    
-    # probably need to do 3 lines per plot - db lasso, just lassso, without feature selection
-    score_feature_selection.append(evaluate(X_train1_with_feature_selection, y_train1, X_test1_with_feature_selection, y_test1, False, True))
-    score_without_feature_selection.append(evaluate(X_train1, y_train1, X_test1, y_test1, False, True))
 
 
 
-
+############################# Plot the results ####################################
+# probably need to do 3 lines per plot - db lasso, just lassso, without feature selection
 line_up, = plt.plot(total_amount_of_data_intervals, score_feature_selection, '--o', color = 'red', alpha = 0.6, label = 'With feature selection')
 line_down, = plt.plot(total_amount_of_data_intervals, score_without_feature_selection, '--o', color = 'blue', alpha = 0.6, label = 'Without feature selection')
 plt.legend(handles=[line_up, line_down])
