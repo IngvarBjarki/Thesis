@@ -6,8 +6,8 @@ Created on Wed Feb 14 21:37:50 2018
 """
 
 import numpy as np
-import random
-import matplotlib.pyplot as plt
+#import random
+#import matplotlib.pyplot as plt
 
 # with help from my friends on stack overflow -- ans 2
 # https://stackoverflow.com/questions/17784587/gradient-descent-using-python-and-numpy
