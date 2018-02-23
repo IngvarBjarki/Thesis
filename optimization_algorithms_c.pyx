@@ -11,13 +11,12 @@ import matplotlib.pyplot as plt
 
 # with help from my friends on stack overflow -- ans 2
 # https://stackoverflow.com/questions/17784587/gradient-descent-using-python-and-numpy
-def gradientDescent(double[:,:] x, long [:] y,  double[:] theta, float learning_rate, int  m, int  numIterations):
+def gradientDescent(x, y, theta, float learning_rate, int  m, int  numIterations):
 
 
     cdef int i
     cdef float cost
-    cdef double[:] graadient
-    cdef double[:,:] xTrans = x.T
+    xTrans = x.transpose()
     
     for i in range(0, numIterations):
         guess = np.dot(x, theta)
