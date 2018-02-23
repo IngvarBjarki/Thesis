@@ -12,13 +12,16 @@ Created on Mon Feb 12 18:58:52 2018
 @author: Ingvar Bjarki Einarsson
 """
 
+
+# TAKA SEED UT
+
 ################################################# IMPORT LIBRARIES #########################################################################
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 #from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
-from multiprocessing import Pool
+
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -103,8 +106,9 @@ def main(X, y, num_splits):
     
     ################# The heart of the program ############################################
         
-    total_amount_of_data = [int(len(y)/num_splits) for i in range(num_splits)] #not lin space i numpy.. 
+    total_amount_of_data = [int(len(y)/num_splits) for i in range(num_splits)] #not lin space i numpy..
     total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
+    print('total_amount_of_data_intervals', total_amount_of_data_intervals)
     score_feature_selection = []
     score_without_feature_selection = []
     # We check if our data set has even or odd numbers, and decide how to split the data
@@ -143,9 +147,8 @@ def main(X, y, num_splits):
             
         ############################ Evaluate the result by running classifiers from computer 1 ###########################
         ############################ on the data with and without the feature selection         ###########################  
-        score_feature_selection.append(evaluate(X_train1_with_feature_selection, y_train1, X_test1_with_feature_selection, y_test1, True, False))
-        score_without_feature_selection.append(evaluate(X_train1, y_train1, X_test1, y_test1, True, False))
-        
+        score_feature_selection.append(evaluate(X_train1_with_feature_selection[:n], y_train1[:n], X_test1_with_feature_selection, y_test1, True, False))
+        score_without_feature_selection.append(evaluate(X_train1[:n], y_train1[:n], X_test1, y_test1, True, False))
     return(total_amount_of_data_intervals, score_feature_selection, score_without_feature_selection)
 
 
@@ -177,21 +180,18 @@ if __name__ == '__main__':
         X = np.asanyarray(X)
         y = iris.target    
     
-    total_run_for_avg = 2
-    num_splits = 2
-    processes = Pool(total_run_for_avg)
-    print(processes.map(main, [(X, y, num_splits)]))
-    
+    total_run_for_avg = 5
+    num_splits = 10
     score_feature_selection = np.zeros(num_splits)
     score_without_feature_selection = np.zeros(num_splits)
-    
-    
-    
     for i in range(total_run_for_avg):
+        print('run nr:', i)
         scores = main(X, y, num_splits)
         total_amount_of_data_intervals, scf, swfs = scores
         score_feature_selection += scf
         score_without_feature_selection += swfs
+        print('score_feature_selection', score_feature_selection )
+        print('scf', scf)
     
     # Get the averages
     score_feature_selection *= 1/num_splits
@@ -210,7 +210,7 @@ if __name__ == '__main__':
     
     
     print('time in sec: ', time.time() - start_time)
-    print(score_feature_selection,score_without_feature_selection)
+    print(score_feature_selection, score_without_feature_selection)
 
 
 
