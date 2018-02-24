@@ -77,7 +77,8 @@ def evaluate(X_train, y_train, X_test, y_test, neural_net, knn):
 
 
 
-def main(X, y, num_splits):
+def main(necessities):
+    X, y, total_amount_of_data_intervals  = necessities
     # X is the data, y the respone variable, num splits is the number of splits we will cut the data
     # to simulate data sets with different amount of data
     
@@ -103,8 +104,6 @@ def main(X, y, num_splits):
     
     ################# The heart of the program ############################################
         
-    total_amount_of_data = [int(len(y)/num_splits) for i in range(num_splits)] #not lin space i numpy.. 
-    total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
     score_feature_selection = []
     score_without_feature_selection = []
     # We check if our data set has even or odd numbers, and decide how to split the data
@@ -146,7 +145,7 @@ def main(X, y, num_splits):
         score_feature_selection.append(evaluate(X_train1_with_feature_selection, y_train1, X_test1_with_feature_selection, y_test1, True, False))
         score_without_feature_selection.append(evaluate(X_train1, y_train1, X_test1, y_test1, True, False))
         
-    return(total_amount_of_data_intervals, score_feature_selection, score_without_feature_selection)
+    return({'score_feature_selection':np.array(score_feature_selection), 'score_without_feature_selection': np.array(score_without_feature_selection)})
 
 
 
@@ -179,38 +178,25 @@ if __name__ == '__main__':
     
     total_run_for_avg = 2
     num_splits = 2
+    total_amount_of_data = [int(len(y)/num_splits) for i in range(num_splits)] #not lin space i numpy.. 
+    total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
     processes = Pool(total_run_for_avg)
-    print(processes.map(main, [(X, y, num_splits)]))
+    results = processes.map(main, [(X, y, total_amount_of_data_intervals), (X, y, total_amount_of_data_intervals)])
     
     score_feature_selection = np.zeros(num_splits)
     score_without_feature_selection = np.zeros(num_splits)
-    
-    
-    
-    for i in range(total_run_for_avg):
-        scores = main(X, y, num_splits)
-        total_amount_of_data_intervals, scf, swfs = scores
-        score_feature_selection += scf
-        score_without_feature_selection += swfs
-    
-    # Get the averages
+    for result in results:
+        score_feature_selection += result['score_feature_selection'] 
+        score_without_feature_selection += result['score_without_feature_selection']
     score_feature_selection *= 1/num_splits
     score_without_feature_selection *= 1/num_splits
-
-    ############################# Plot the results ####################################
-    # probably need to do 3 lines per plot - db lasso, just lassso, without feature selection
-    if not is_Linux:
-        line_up, = plt.plot(total_amount_of_data_intervals, score_feature_selection, '--o', color = 'red', alpha = 0.6, label = 'With feature selection')
-        line_down, = plt.plot(total_amount_of_data_intervals, score_without_feature_selection, '--o', color = 'blue', alpha = 0.6, label = 'Without feature selection')
-        plt.legend(handles=[line_up, line_down])
-        plt.xlabel('N')
-        plt.ylabel('Error rate')
-        #plt.savefig('result.png')
-        plt.show()
     
     
-    print('time in sec: ', time.time() - start_time)
-    print(score_feature_selection,score_without_feature_selection)
-
-
-
+    line_up, = plt.plot(total_amount_of_data_intervals, score_feature_selection, '--o', color = 'red', alpha = 0.6, label = 'With feature selection')
+    line_down, = plt.plot(total_amount_of_data_intervals, score_without_feature_selection, '--o', color = 'blue', alpha = 0.6, label = 'Without feature selection')
+    plt.legend(handles=[line_up, line_down])
+    plt.xlabel('N')
+    plt.ylabel('Error rate')
+    #plt.savefig('result.png')
+    plt.show()
+    print('time:',time.time() - start_time)
