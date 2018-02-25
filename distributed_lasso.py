@@ -180,8 +180,8 @@ if __name__ == '__main__':
         X = np.asanyarray(X)
         y = iris.target    
     
-    total_run_for_avg = 5
-    num_splits = 10
+    total_run_for_avg = 2
+    num_splits = 2
     score_feature_selection = np.zeros(num_splits)
     score_without_feature_selection = np.zeros(num_splits)
     for i in range(total_run_for_avg):
@@ -200,13 +200,15 @@ if __name__ == '__main__':
     ############################# Plot the results ####################################
     # probably need to do 3 lines per plot - db lasso, just lassso, without feature selection
     if not is_Linux:
-        line_up, = plt.plot(total_amount_of_data_intervals, score_feature_selection, '--o', color = 'red', alpha = 0.6, label = 'With feature selection')
-        line_down, = plt.plot(total_amount_of_data_intervals, score_without_feature_selection, '--o', color = 'blue', alpha = 0.6, label = 'Without feature selection')
-        plt.legend(handles=[line_up, line_down])
-        plt.xlabel('N')
-        plt.ylabel('Error rate')
+        pass
+        #line_up, = plt.plot(total_amount_of_data_intervals, score_feature_selection, '--o', color = 'red', alpha = 0.6, label = 'With feature selection')
+        #line_down, = plt.plot(total_amount_of_data_intervals, score_without_feature_selection, '--o', color = 'blue', alpha = 0.6, label = 'Without feature selection')
+        #plt.legend(handles=[line_up, line_down])
+        #plt.xlabel('N')
+        #plt.ylabel('Error rate')
         #plt.savefig('result.png')
-        plt.show()
+        #plt.show()
+	
     
     
     print('time in sec: ', time.time() - start_time)

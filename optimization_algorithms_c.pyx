@@ -6,16 +6,32 @@ Created on Wed Feb 14 21:37:50 2018
 """
 
 import numpy as np
+cimport numpy as np
 import random
 import matplotlib.pyplot as plt
+cimport cython
+
+# we have to fix our dtype for the np module
+DTYPE_int = np.int
+DTYPE_float = np.float
+
+# every type in the cython mudle has a corresponding compile  time type, with t suffix
+ctypedef np.int_t  DTYPE_int_t
+ctypedef np.float_t DTYPE_float_t
 
 # with help from my friends on stack overflow -- ans 2
 # https://stackoverflow.com/questions/17784587/gradient-descent-using-python-and-numpy
-def gradientDescent(x, y, theta, float learning_rate, int  m, int  numIterations):
+@cython.boundscheck(False) # turn off bounds-checking for entire function
+@cython.wraparound(False)  # turn off negative index wrapping for entire function
+def gradientDescent(np.ndarray[DTYPE_float_t, ndim = 2] x, np.ndarray[DTYPE_int_t, ndim = 1] y, np.ndarray[DTYPE_float_t, ndim = 1] theta, float learning_rate, int  m, int  numIterations):
 
 
     cdef int i
     cdef float cost
+    cdef np.ndarray[DTYPE_float_t, ndim = 2] xTrans
+    cdef np.ndarray[DTYPE_float_t, ndim = 1] gradient
+    cdef np.ndarray[DTYPE_float_t, ndim = 1] loss
+    cdef np.ndarray[DTYPE_float_t, ndim = 1] guess
     xTrans = x.transpose()
     
     for i in range(0, numIterations):
