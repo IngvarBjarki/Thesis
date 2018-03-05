@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from collections import defaultdict
 import matplotlib.pyplot as plt
+
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
@@ -86,7 +87,7 @@ for n in total_amount_of_data_intervals:
     
     
         # add the score
-    all_accuracys['original'].append(1 - clf.score(X_test, y_test))
+    all_accuracys['Without DP'].append(1 - clf.score(X_test, y_test))
     #accur = num_correct_predictions / len(y_test)
     #print('accur', accur)
         
