@@ -13,47 +13,18 @@ from sklearn.linear_model import LogisticRegression
 from collections import defaultdict
 from multiprocessing import Pool
 
-def main(_):
-
+def main(all_args):
+    
+    X_train, X_test, y_train, y_test, total_amount_of_data_intervals = all_args
+    
     def sigmoid(x):
         return 1 / (1 + np.exp(-x))
     
-    binnary = True
     debugg = False
     regularization_constant = 5
-    # load the data
-    digits = datasets.load_digits()
-    n_samples = len(digits.images)
-    X = digits.images.reshape((n_samples, -1))
-    y = digits.target
+
     
-    
-    if binnary:
-        
-        # now we only want to do binary classification of two numbers
-        # so we take only number  -- 9 and 4 are probably most similar
-        index_of_zeros =  np.flatnonzero( y == 4 ) #returns the indexes
-        index_of_tows = np.flatnonzero( y == 9 )
-         
-        # merge the two together and  sort them
-        new_indexes = np.concatenate((index_of_zeros, index_of_tows), axis=0)
-        new_indexes = np.sort(new_indexes)
-        y = y[new_indexes]
-        X = X[new_indexes]
-        # since we are classifying with the sign - we translate the y vector  to -1 to 1
-        y[y == 4] = -1
-        y[y == 9] = 1
-        
-     
     all_accuracys = defaultdict(list)
-    
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state = 42)
-        
-    # in each itreation we use different amount of data to see how the model improvese with increased data
-    num_splits = 15    
-    total_amount_of_data = [int(len(y_train)/num_splits) for i in range(num_splits)] #not lin space i numpy..
-    total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
-    
     for n in total_amount_of_data_intervals:
         
         
@@ -130,11 +101,40 @@ def main(_):
             
 if __name__ == '__main__':
     
-    # SOURNING HVORT EG EIGI AD SETJA ALLT TRAINING DOTID HERNA TIL 
-    # TESS AD HAFA RETTAN FJOLDA i average result.. og fyrir plotinn...
-    num_instances = 10
+    # load the data
+    digits = datasets.load_digits()
+    n_samples = len(digits.images)
+    X = digits.images.reshape((n_samples, -1))
+    y = digits.target
+    
+    # now we only want to do binary classification of two numbers
+    # so we take only number  -- 9 and 4 are probably most similar
+    index_of_zeros =  np.flatnonzero( y == 4 ) #returns the indexes
+    index_of_tows = np.flatnonzero( y == 9 )
+     
+    # merge the two together and  sort them
+    new_indexes = np.concatenate((index_of_zeros, index_of_tows), axis=0)
+    new_indexes = np.sort(new_indexes)
+    y = y[new_indexes]
+    X = X[new_indexes]
+    # since we are classifying with the sign - we translate the y vector  to -1 to 1
+    y[y == 4] = -1
+    y[y == 9] = 1
+    
+     
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state = 42)
+        
+    # in each itreation we use different amount of data to see how the model improvese with increased data
+    num_splits = 15    
+    total_amount_of_data = [int(len(y_train)/num_splits) for i in range(num_splits)] #not lin space i numpy..
+    total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
+    
+    # Lets do multi-threading to speed things up!
+    num_runs = 10
     p = Pool(5)
-    results = p.map(main, range(num_instances))
+    args = [(X_train, X_test, y_train, y_test, total_amount_of_data_intervals)]*num_runs
+    results = p.map(main, args)
     print('-----------------------------------')
     print(results)
     print('-----------------------------------')
@@ -148,17 +148,17 @@ if __name__ == '__main__':
     ax = plt.subplot(111)
 
     for result in average_results:
-        average_results[result] /= num_instances
-        ax.plot(average_results[result], label = result, alpha=0.6)
+        average_results[result] /= num_runs
+        ax.plot(total_amount_of_data_intervals, average_results[result], label = result, alpha=0.6)
     
     # Shrink current axis by 20%
     box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    ax.set_position([box.x0, box.y0, box.width * 0.75, box.height])
     
-    plt.legend(loc='upper center', bbox_to_anchor=(1.2, 1), fancybox=True, shadow=True)
+    plt.legend(loc='upper center', bbox_to_anchor=(1.22, 1.01), fancybox=True, shadow=True)
     
-    plt.ylabel('Error rate')
-    plt.xlabel('Amount of training data')
+    plt.ylabel('Error rate', , fontsize = 16)
+    plt.xlabel('Amount of training data', , fontsize = 16)
     plt.title('Logistic Regression', fontsize = 18)
     plt.show()
     
