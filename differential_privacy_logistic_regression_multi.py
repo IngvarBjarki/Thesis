@@ -129,6 +129,9 @@ def main(_):
     return all_accuracys
             
 if __name__ == '__main__':
+    
+    # SOURNING HVORT EG EIGI AD SETJA ALLT TRAINING DOTID HERNA TIL 
+    # TESS AD HAFA RETTAN FJOLDA i average result.. og fyrir plotinn...
     num_instances = 10
     p = Pool(5)
     results = p.map(main, range(num_instances))
@@ -137,20 +140,32 @@ if __name__ == '__main__':
     print('-----------------------------------')
     
     average_results = defaultdict(lambda:np.array([0.0 for i in range(15)]))
-    print('ok...')
     for result in results:
         for item in result:
             average_results[item] += np.array(result[item])
-            
+    
+    fig = plt.figure()
+    ax = plt.subplot(111)
+
     for result in average_results:
         average_results[result] /= num_instances
-        
-        plt.plot(average_results[result], label = result, alpha=0.6)
+        ax.plot(average_results[result], label = result, alpha=0.6)
+    
+    # Shrink current axis by 20%
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    
+    plt.legend(loc='upper center', bbox_to_anchor=(1.2, 1), fancybox=True, shadow=True)
+    
     plt.ylabel('Error rate')
     plt.xlabel('Amount of training data')
     plt.title('Logistic Regression', fontsize = 18)
-    plt.legend()
     plt.show()
-        
+    
+    
+#plt.plot([1,2,3], label='ingvar')
+#plt.legend(loc='upper center', bbox_to_anchor=(1.15, 1), fancybox=True, shadow=True)
+#plt.show()
+
     
             
