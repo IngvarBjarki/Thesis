@@ -151,7 +151,7 @@ if __name__ == '__main__':
         average_results[result] /= num_runs
         ax.plot(total_amount_of_data_intervals, average_results[result], label = result, alpha=0.6)
     
-    # Shrink current axis by 20%
+    # Shrink current axis by 25%
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.75, box.height])
     
@@ -163,9 +163,7 @@ if __name__ == '__main__':
     plt.show()
     
     
-#plt.plot([1,2,3], label='ingvar')
-#plt.legend(loc='upper center', bbox_to_anchor=(1.15, 1), fancybox=True, shadow=True)
-#plt.show()
+
 
     
             
