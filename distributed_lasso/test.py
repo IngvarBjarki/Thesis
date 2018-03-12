@@ -9,28 +9,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
-from optimization_algorithms import  gradientDescent, gradientDescent_converge
+from optimization_algorithms import   get_gradient
+from sklearn.preprocessing import normalize
+
+
+debugg = False
 
 def computer_1(X, y, theta):
     # X is the data attributes and y are the targets, theta is the gradient
-    learning_rate = 0.0005
     m = len(y) 
-    numIterations = 10
-    return(gradientDescent_converge(X, y, theta, learning_rate, m, numIterations))
+    return(get_gradient(X, y, theta, m))
     
 def computer_2(X, y, theta):
     # X is the data attributes and y are the targets, theta is the gradient
-    learning_rate = 0.0005
     m = len(y) 
-    numIterations = 10
-    return(gradientDescent_converge(X, y, theta, learning_rate, m, numIterations))
+    return(get_gradient(X, y, theta, m))
 
 
-
+ 
 
 digits = datasets.load_digits()
 n_samples = len(digits.images)
 X_without_bias = digits.images.reshape((n_samples, -1))
+X_without_bias = normalize(X_without_bias)
 y = digits.target
  
 # now we only want to do binary classification of two numbers
@@ -52,7 +53,7 @@ X = np.ones((records, attributes + 1))
 X[:,1:] = X_without_bias
  
 # we split to train and test before we do feature selection
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state = 26)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 
 # split the data differently according to if it is odd or even
 if len(X_train) % 2 == 0:
@@ -70,16 +71,18 @@ else:
     X_train2, y_train2 = X_train[n:], y_train[n:]
     
 # in each itreation we use different amount of data to see how the model improvese with increased data
-num_splits = 1    
+num_splits = 30    
 total_amount_of_data = [int(n/num_splits) for i in range(num_splits)] #not lin space i numpy..
 total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
 
 # now we perform the distributed lasso regression
-num_rounds = 101
+num_rounds = 1000
 weight_decay = 0.001 # for the lasso regression - they tried values from 0.0001-0.1
+learning_rate = 0.001
 Gamma = lambda x: np.sign(x)*(abs(x) - weight_decay)
-accuracies = []
+accuracies_distributed = []
 accuracies_single = []
+accuracies_all_data = []
 for n in total_amount_of_data_intervals:  
     theta = np.array([0.0 for i in range(len(X[0]))])
     print('Iteration n:',n)
@@ -89,17 +92,20 @@ for n in total_amount_of_data_intervals:
         computer_2_gradient = computer_2(X_train2[:n], y_train2[:n], theta)
         total_gradients = computer_1_gradient + computer_2_gradient
         
-        theta  =  Gamma(theta - 0.0001 *total_gradients)
-        
-        #if i % 10 == 0:
-            #print('**********{}***********'.format(i))
-            #total_correct = 0
-            #for i in range(len(y_test)):
-                #prediction = np.sign(np.dot(theta, X_test[i]))
-                #if prediction == y_test[i]:
-                    #total_correct += 1
-
-            #print('\ntotal correct: ', total_correct)
+        theta  =  Gamma(theta - learning_rate * total_gradients)
+        if debugg:
+            if i % 50 == 0:
+                print('**********{}***********'.format(i))
+                print('theta', sum(abs(theta)))
+                print('computer_1_gradient', sum(abs(computer_1_gradient)))
+                print('computer_2_gradient', sum(abs(computer_2_gradient)))
+                total_correct = 0
+                for i in range(len(y_test)):
+                    prediction = np.sign(np.dot(theta, X_test[i]))
+                    if prediction == y_test[i]:
+                        total_correct += 1
+    
+                print('\ntotal correct: ', total_correct)
 
             
     # Evaluate the model -- check for error rate
@@ -111,13 +117,12 @@ for n in total_amount_of_data_intervals:
             total_correct += 1
     
     print('\ntotal correct distributed lasso: ', total_correct)
-
-
+    accuracies_distributed.append(1 - total_correct /len(y_test))
 ############## If only one computer did the analysis on there own data ############################
     theta = np.array([0.0 for i in range(len(X[0]))])
     for i in range(num_rounds):       
         theta = computer_1(X_train1[:n], y_train1[:n], theta )
-        theta  =  Gamma(theta - 0.0001 *theta)
+        theta  =  Gamma(theta - learning_rate *theta)
     
     # Evaluate the model -- check for error rate
     total_correct = 0
@@ -127,7 +132,7 @@ for n in total_amount_of_data_intervals:
             total_correct += 1
     
     print('\ntotal correct single computer: ', total_correct)
-
+    accuracies_single.append(1 - total_correct /len(y_test))
 
 ############ If all data was at a centeralized location ###########################################
 
@@ -136,7 +141,7 @@ for n in total_amount_of_data_intervals:
     theta = np.array([0.0 for i in range(len(X[0]))])
     for i in range(num_rounds):
         theta = computer_1(all_predictors, all_responses, theta)
-        theta  =  Gamma(theta - 0.0001 *theta)
+        theta  =  Gamma(theta - learning_rate *theta)
 
     # Evaluate the model -- check for error rate
     total_correct = 0
@@ -146,3 +151,16 @@ for n in total_amount_of_data_intervals:
             total_correct += 1
     
     print('\ntotal correct - central location: ', total_correct)
+    accuracies_all_data.append(1 - total_correct /len(y_test))
+
+
+
+
+plt.plot(total_amount_of_data_intervals, accuracies_distributed, '*-', label = 'Distributed')
+plt.plot(total_amount_of_data_intervals, accuracies_single, '*-', label = 'Single')
+plt.plot(total_amount_of_data_intervals, accuracies_all_data, '*-', label = 'All data')
+
+plt.legend()
+plt.show()
+
+
