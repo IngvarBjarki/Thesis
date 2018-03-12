@@ -62,10 +62,11 @@ def main(args):
     
     
     # now we perform the distributed lasso regression
-    num_rounds = 200
-    weight_decay = 0.0001 # for the lasso regression - they tried values from 0.0001-0.1
+    num_rounds = 50000
+    weight_decay = 0.01 # for the lasso regression - they tried values from 0.0001-0.1
     learning_rate = 0.001
     Gamma = lambda x: np.sign(x)*(abs(x) - weight_decay)
+
     accuracies_distributed = []
     accuracies_single = []
     accuracies_central = []
@@ -74,12 +75,15 @@ def main(args):
         print('Iteration n:',n)
             
         for i in range(num_rounds):
-            computer_1_gradient = computer_1(X_train1[:n], y_train1[:n], theta )
-            computer_2_gradient = computer_2(X_train2[:n], y_train2[:n], theta)
+            is_cost_satisfied_computer1, computer_1_gradient = computer_1(X_train1[:n], y_train1[:n], theta )
+            is_cost_satisfied_computer2, computer_2_gradient  = computer_2(X_train2[:n], y_train2[:n], theta)
             total_gradients = computer_1_gradient + computer_2_gradient
             
             theta  =  Gamma(theta - learning_rate * total_gradients)
             
+            if is_cost_satisfied_computer1 or is_cost_satisfied_computer2:
+                # if either of the computers has converge we stopp
+                break
                 
         # Evaluate the model -- check for error rate
         total_correct_distributed = 0
@@ -93,10 +97,9 @@ def main(args):
         accuracies_distributed.append(1 - total_correct_distributed/len(y_test))
         
     ############## If only one computer did the analysis on there own data ############################
-        theta = np.array([0.0 for i in range(len(X_train[0]))])
-        for i in range(num_rounds):       
-            theta = computer_1(X_train1[:n], y_train1[:n], theta )
-            theta  =  Gamma(theta - learning_rate * theta)
+        theta = np.zeros(len(X[0]))
+        theta = gradientDescentLasso(X_train1[:n], y_train1[:n], theta,
+                                 learning_rate,len(y_train[:2*n]), num_rounds, weight_decay) 
         
         # Evaluate the model -- check for error rate
         total_correct_single = 0
@@ -110,10 +113,9 @@ def main(args):
     
     ############ If all data was at a centeralized location ###########################################
     
-        theta = np.array([0.0 for i in range(len(X_train[0]))])
-        for i in range(num_rounds):
-            theta = computer_1(X_train[:2*n], y_train[:2*n], theta)
-            theta  =  Gamma(theta - learning_rate *theta)
+        theta = np.zeros(len(X[0]))
+        theta = gradientDescentLasso(X_train[:2*n], y_train[:2*n], theta,
+                                 learning_rate, len(y_train[:2*n]), num_rounds, weight_decay)
     
         # Evaluate the model -- check for error rate
         total_correct_all_data = 0
@@ -163,7 +165,7 @@ if __name__ == '__main__':
     total_instances = 10
     num_splits = 15
     args = [(X, y, num_splits)]*total_instances#[(X_train, X_test, y_train, y_test, X_train1, y_train1, X_train2, y_train2, total_amount_of_data_intervals)]*total_instances
-    results = p.map(main, args, chunksize = 5)
+    results = p.map(main, args, chunksize = 2)
     p.close()
     p.join()
     print('getting ready for plotting results...')

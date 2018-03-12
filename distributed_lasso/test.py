@@ -78,7 +78,7 @@ total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
 # now we perform the distributed lasso regression
 num_rounds = 5000
 weight_decay = 0.001 # for the lasso regression - they tried values from 0.0001-0.1
-learning_rate = 0.001
+learning_rate = 0.0001
 Gamma = lambda x: np.sign(x)*(abs(x) - weight_decay)
 accuracies_distributed = []
 accuracies_single = []
