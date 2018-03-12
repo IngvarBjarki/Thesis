@@ -16,8 +16,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import normalize
 from multiprocessing import Pool
-from optimization_algorithms import  gradientDescent, gradientDescent_converge
+from optimization_algorithms import  gradientDescent, gradientDescent_converge, get_gradient, gradientDescentLasso
 
 def main(args):
     # get all the relevant data from the preprocessing
@@ -26,17 +27,13 @@ def main(args):
     
     def computer_1(X, y, theta):
         # X is the data attributes and y are the targets, theta is the gradient
-        learning_rate = 0.0005
         m = len(y) 
-        numIterations = 500000
-        return(gradientDescent_converge(X, y, theta, learning_rate, m, numIterations))
+        return(get_gradient(X, y, theta, m))
         
     def computer_2(X, y, theta):
         # X is the data attributes and y are the targets, theta is the gradient
-        learning_rate = 0.0005
         m = len(y) 
-        numIterations = 500000
-        return(gradientDescent_converge(X, y, theta, learning_rate, m, numIterations))
+        return(get_gradient(X, y, theta, m))
     
     
 
@@ -52,29 +49,24 @@ def main(args):
         # we split the data for the two computers
         X_train1, y_train1 = X_train[:n], y_train[:n]
         X_train2, y_train2 = X_train[n:], y_train[n:]
-        print('test1')
         
     else:
         # if odd, we make the first data set have 1 more record than the second
-        # split the data for the two computers
         n = int((len(X_train) + 1) / 2)
         X_train1, y_train1 = X_train[:n], y_train[:n]
         X_train2, y_train2 = X_train[n:], y_train[n:]
         
-    # in each itreation we use different amount of data to see how the model improvese with increased data
-    #num_splits = 15    
-    total_amount_of_data = [int(n/num_splits) for i in range(num_splits)] #not lin space i numpy..
+    # in each itreation we use different amount of data to see how the model improvese with increased data    
+    total_amount_of_data = [int(n/num_splits) for i in range(num_splits)] 
     total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
     
-
-
     
     # now we perform the distributed lasso regression
     num_rounds = 200
-    weight_decay = 0.005 # for the lasso regression - they tried values from 0.0001-0.1
+    weight_decay = 0.0001 # for the lasso regression - they tried values from 0.0001-0.1
+    learning_rate = 0.001
     Gamma = lambda x: np.sign(x)*(abs(x) - weight_decay)
     accuracies_distributed = []
-    accuracies_mean = []
     accuracies_single = []
     accuracies_central = []
     for n in total_amount_of_data_intervals:  
@@ -86,18 +78,8 @@ def main(args):
             computer_2_gradient = computer_2(X_train2[:n], y_train2[:n], theta)
             total_gradients = computer_1_gradient + computer_2_gradient
             
-            theta  =  Gamma(theta - 0.0001 *total_gradients)
+            theta  =  Gamma(theta - learning_rate * total_gradients)
             
-            #if i % 10 == 0:
-                #print('**********{}***********'.format(i))
-                #total_correct = 0
-                #for i in range(len(y_test)):
-                    #prediction = np.sign(np.dot(theta, X_test[i]))
-                    #if prediction == y_test[i]:
-                        #total_correct += 1
-    
-                #print('\ntotal correct: ', total_correct)
-    
                 
         # Evaluate the model -- check for error rate
         total_correct_distributed = 0
@@ -109,33 +91,12 @@ def main(args):
         
         print('\ntotal correct distributed lasso: ', total_correct_distributed)
         accuracies_distributed.append(1 - total_correct_distributed/len(y_test))
-    
-    
-    ############## take the average ################################################
-        theta = np.array([0.0 for i in range(len(X_train[0]))])
-        for i in range(num_rounds):
-            computer_1_gradient = computer_1(X_train1[:n], y_train1[:n], theta )
-            computer_2_gradient = computer_2(X_train2[:n], y_train2[:n], theta)
-            total_gradients = computer_1_gradient + computer_2_gradient
-                
-            theta  =  Gamma(0.5 *total_gradients)
-            
-            # Evaluate the model -- check for error rate
-            total_correct_mean = 0
-            for i in range(len(y_test)):
-                prediction = np.sign(np.dot(theta, X_test[i]))
-                #print(prediction, y_test[i])
-                if prediction == y_test[i]:
-                    total_correct_mean += 1
-            
-        print('\ntotal correct mean lasso: ', total_correct_mean)
-        accuracies_mean.append(1 - total_correct_mean/len(y_test))
         
     ############## If only one computer did the analysis on there own data ############################
         theta = np.array([0.0 for i in range(len(X_train[0]))])
         for i in range(num_rounds):       
             theta = computer_1(X_train1[:n], y_train1[:n], theta )
-            theta  =  Gamma(theta - 0.0001 *theta)
+            theta  =  Gamma(theta - learning_rate * theta)
         
         # Evaluate the model -- check for error rate
         total_correct_single = 0
@@ -151,8 +112,8 @@ def main(args):
     
         theta = np.array([0.0 for i in range(len(X_train[0]))])
         for i in range(num_rounds):
-            theta = computer_1(X_train, y_train, theta)
-            theta  =  Gamma(theta - 0.0001 *theta)
+            theta = computer_1(X_train[:2*n], y_train[:2*n], theta)
+            theta  =  Gamma(theta - learning_rate *theta)
     
         # Evaluate the model -- check for error rate
         total_correct_all_data = 0
@@ -165,7 +126,6 @@ def main(args):
         accuracies_central.append(1 - total_correct_all_data/len(y_test))
     
     return {'distributed':np.array(accuracies_distributed),
-           'mean':np.array(accuracies_mean),
            'single':np.array(accuracies_single),
            'central_all_data':np.array(accuracies_central),
            'total_amount_of_data_intervals':np.array(total_amount_of_data_intervals)}
@@ -176,6 +136,7 @@ if __name__ == '__main__':
     digits = datasets.load_digits()
     n_samples = len(digits.images)
     X_without_bias = digits.images.reshape((n_samples, -1))
+    X_without_bias = normalize(X_without_bias)
     y = digits.target
      
     # now we only want to do binary classification of two numbers
@@ -191,7 +152,7 @@ if __name__ == '__main__':
     # since we are classifying with the sign - we translate the y vector  to -1 to 1
     y[y == 4] = -1
     y[y == 9] = 1
-    # we add bias term in front -- done for the gradient decent
+    # we add bias term in front -- done for the gradient calculations
     records, attributes = np.shape(X_without_bias)
     X = np.ones((records, attributes + 1))
     X[:,1:] = X_without_bias
@@ -199,7 +160,7 @@ if __name__ == '__main__':
 
 
     p = Pool(4)
-    total_instances = 30
+    total_instances = 10
     num_splits = 15
     args = [(X, y, num_splits)]*total_instances#[(X_train, X_test, y_train, y_test, X_train1, y_train1, X_train2, y_train2, total_amount_of_data_intervals)]*total_instances
     results = p.map(main, args, chunksize = 5)
@@ -208,7 +169,6 @@ if __name__ == '__main__':
     print('getting ready for plotting results...')
     average_results = {
             'distributed': np.zeros(num_splits),
-            'mean':np.zeros(num_splits),
             'single': np.zeros(num_splits),
             'central_all_data': np.zeros(num_splits),
             'total_amount_of_data_intervals': np.zeros(num_splits)

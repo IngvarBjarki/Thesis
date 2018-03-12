@@ -76,7 +76,7 @@ total_amount_of_data = [int(n/num_splits) for i in range(num_splits)] #not lin s
 total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
 
 # now we perform the distributed lasso regression
-num_rounds = 5000
+num_rounds = 10000
 weight_decay = 0.001 # for the lasso regression - they tried values from 0.0001-0.1
 learning_rate = 0.001
 Gamma = lambda x: np.sign(x)*(abs(x) - weight_decay)
@@ -120,29 +120,9 @@ for n in total_amount_of_data_intervals:
     accuracies_distributed.append(1 - total_correct /len(y_test))
     
 ############## If only one computer did the analysis on there own data ############################
-    theta = np.array([0.0 for i in range(len(X[0]))])
-
-    for i in range(num_rounds):       
-        theta = computer_1(X_train1[:n], y_train1[:n], theta )
-        theta  =  Gamma(theta - learning_rate *theta)
-        
-        
-        if(sum(abs(computer_1_gradient - theta)) > 0.001):
-            break
-        
-        if i % 50 == 0:
-            print('**********{}***********'.format(i))
-            print('theta', sum(abs(theta)))
-            print('computer_1_gradient', sum(abs(computer_1_gradient)))
-            print('computer1 and theta', sum(abs(computer_1_gradient - theta)))
-            total_correct = 0
-            for i in range(len(y_test)):
-                prediction = np.sign(np.dot(theta, X_test[i]))
-                if prediction == y_test[i]:
-                    total_correct += 1
-    
-            print('\ntotal correct: ', total_correct)
-    
+    theta = np.zeros(len(X[0]))
+    theta = gradientDescentLasso(X_train1[:n], y_train1[:n], theta,
+                                 learning_rate,len(y_train[:2*n]), num_rounds, weight_decay)    
     # Evaluate the model -- check for error rate
     total_correct = 0
     for i in range(len(y_test)):
@@ -155,9 +135,9 @@ for n in total_amount_of_data_intervals:
 
 ############ If all data was at a centeralized location ###########################################
 
-    theta = np.array([0.0 for i in range(len(X[0]))])
-    computer_1_gradient_previous = np.array([9999.0 for i in range(len(X[0]))])
-    theta = gradientDescentLasso(X_train[:2*n], y_train[:2*n], theta, learning_rate,len(y_train[:2*n]), num_rounds, weight_decay)
+    theta = np.zeros(len(X[0]))
+    theta = gradientDescentLasso(X_train[:2*n], y_train[:2*n], theta,
+                                 learning_rate,len(y_train[:2*n]), num_rounds, weight_decay)
 
     # Evaluate the model -- check for error rate
     total_correct = 0

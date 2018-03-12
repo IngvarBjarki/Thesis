@@ -32,6 +32,26 @@ def gradientDescent(x, y, theta, learning_rate, m, numIterations):
 
 
 
+def gradientDescentLasso(x, y, theta, learning_rate, m, numIterations, weight_decay):
+    
+    Gamma = lambda x: np.sign(x)*(abs(x) - weight_decay)
+    xTrans = x.transpose()
+    for i in range(0, numIterations):
+        guess = np.dot(x, theta)
+        loss = guess - y
+        # avg cost per example (the 2 in 2*m doesn't really matter here.
+        # But to be consistent with the gradient, I include it)
+        #cost = np.sum(loss ** 2) / (2 * m)
+        #print("Iteration %d | Cost: %f" % (i, cost))
+        # avg gradient per example
+        gradient = np.dot(xTrans, loss) / m
+        
+        # update
+        theta = Gamma(theta - learning_rate * gradient)
+    return theta
+
+
+
 def gradientDescent_converge(x, y, theta, learning_rate, m, numIterations):
     xTrans = x.transpose()
     cost = 9999 # due to minimization
