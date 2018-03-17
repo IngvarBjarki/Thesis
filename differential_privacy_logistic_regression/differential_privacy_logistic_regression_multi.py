@@ -193,28 +193,18 @@ if __name__ == '__main__':
     print('\n\n')
     print(noise[0]['noise eps = 0.0005'])
     
-
-    ##################### write statistics to excel for generating table in latex ##################
-    # Lets make two tables, one for mean and one fore variance
+    #%%
+    ###################### write statistics to excel for generating table in latex ##################
+    ###################### Lets make two tables, one for mean and one fore variance ############
+    ######################    Also make box plot of the means and the variances     #########
     
     epsilons = [0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 3]
-    book = xlwt.Workbook(encoding="utf-8")
-    sheet = book.add_sheet("Sheet 1")
+    pandas_values_mean = []
+    pandas_values_var = []
     
-    sheet.write(0, 0, 'N')
-    sheet.write(0,1,'Weights')
     
-    sheet.write(0, 15, 'N')
-    sheet.write(0,16,'Weights')
-    for i, epsilon in enumerate(epsilons):
-        sheet.write(0, 2 +i, '$\epsilon = {}$'.format(epsilon))
-        sheet.write(0, 17 +i, '$\epsilon = {}$'.format(epsilon))
-        
-    for i, n in enumerate(total_amount_of_data_in_interval):
-        n = int(n)
-        sheet.write(1 + i, 0, n)
-        sheet.write(1 + i, 15, n)
-    
+    pandas_values_mean.append(list(total_amount_of_data_in_interval))
+    pandas_values_var.append(list(total_amount_of_data_in_interval))
     
     print('Lets analys the weights..! \n')
     print('\n')
@@ -231,18 +221,19 @@ if __name__ == '__main__':
         averaged_weights[key] /= num_instances
             
     print('ALRIGHTY!!!!!')
-    for i, (key, value) in enumerate(averaged_weights.items()):
-        print(key, np.mean(value), np.var(value))
-        sheet.write(1 + i, 1, np.mean(value))
-        sheet.write(1 + i, 16, np.var(value))
+    # Collect the data in list so we can build pandas data frame
+    weights_means = []
+    weights_var = []
+    for key in sorted(averaged_weights):
+        #print(key, np.mean(value), np.var(value))
+        #sheet.write(1 + i, 1, np.mean(value))
+        #sheet.write(1 + i, 16, np.var(value))
+        value = averaged_weights[key]
+        weights_means.append(np.mean(value))
+        weights_var.append(np.var(value))
 
-    # sameina weights til tess ad geta fundid variance
-    #weight_means = defaultdict(list)
-    #for item in weights_stats:
-     #   for key in item:
-      #      weight_means[key].append(item[key]['mean'])
-
-    
+    pandas_values_mean.append(weights_means)
+    pandas_values_var.append(weights_var)
 
     
     print('\nLets analys the noise!\n')
@@ -267,7 +258,57 @@ if __name__ == '__main__':
                 new_key = 'n = ' + str(total_amount_of_data_in_interval[n]) + ' ' + key
                 averaged_noise[new_key].append(value)
     
-    # calculate the statistics for the noise
+    
+    # transpose the pandas lists so they are in the correct order such that
+    # each list is N, weights
+    pandas_values_mean = list(map(list, zip(*pandas_values_mean)))
+    pandas_values_var = list(map(list, zip(*pandas_values_var)))
+
+    # calculate the statistics for the noise/epsilons
+    j, n_index = 0, 0
+    # we loop thorugh all epsilons for each n
+    for key in sorted(averaged_noise, key=natural_keys):
+        print(key, j)
+        pandas_values_mean[n_index].append(np.mean(averaged_noise[key]))
+        pandas_values_var[n_index].append(np.var(averaged_noise[key]))
+        if j == len(epsilons) - 1:
+            print('heos')
+            j = 0
+            n_index += 1
+        else:
+            j += 1
+    print('DONE')
+    
+    # FOR PANDAS -- theses are the column names
+    names = ['N', 'Weights'] + ['$\epsilon = {}$'.format(epsilon) for epsilon in epsilons]
+    
+
+    
+    df_means = pd.DataFrame(pandas_values_mean, columns = names)
+    df_vars = pd.DataFrame(pandas_values_var, columns = names)
+    
+    # make box plot of the means and the variances
+    ax = sns.boxplot(data=df_means[names[1:]], palette = 'Set3') # exclude the N's
+    ax.set_xticklabels(rotation=30)
+    ax = sns.boxplot(data=df_vars[names[1:]], palette = 'Set3')
+    ax.set_xticklabels(rotation=30) # ef failar plt.xticks(rotation=45)
+    
+    # make a bar plot of the sum of the means and variances
+    #!!! gaeti gert rauda linu efst med maxinu svi tad sjaist vel hvad tetta er langt fra
+    ax = sns.barplot(data=df_means[names[1:]], palette = 'Set3') # exclude the N's
+    ax.set_xticklabels(rotation=30)
+    ax = sns.barplot(data=df_vars[names[1:]], palette = 'Set3')
+    ax.set_xticklabels(rotation=30) # ef failar plt.xticks(rotation=45)
+    
+    
+    # save the two dataframes as a table in excel
+    writer = pd.ExcelWriter('output.xlsx')
+    df_means.to_excel(writer, 'Sheet1')
+    df_vars.to_excel(writer,  'Sheet2')
+    writer.save()
+    
+    
+    '''
     i, j = 1, 0 # i for row j for col
     for key in sorted(averaged_noise, key=natural_keys):
         print(i, j)
@@ -279,10 +320,10 @@ if __name__ == '__main__':
             
         else:
             j+= 1
-        
+        '''
  
     
-    book.save("analyses.xls")
+  
     
     # Lets do box plots of the weights and the noise of all the 
     
