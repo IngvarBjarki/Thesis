@@ -30,8 +30,10 @@ if binnary:
     
     # now we only want to do binary classification of two numbers
     # so we take only number  -- 9 and 4 are probably most similar
-    index_of_zeros =  np.flatnonzero( y == 4 ) #returns the indexes
-    index_of_tows = np.flatnonzero( y == 9 )
+    num1 = 0
+    num2 = 1
+    index_of_zeros =  np.flatnonzero( y == num1 ) #returns the indexes
+    index_of_tows = np.flatnonzero( y == num2 )
      
     # merge the two together and  sort them
     new_indexes = np.concatenate((index_of_zeros, index_of_tows), axis=0)
@@ -39,11 +41,11 @@ if binnary:
     y = y[new_indexes]
     X = X[new_indexes]
     # since we are classifying with the sign - we translate the y vector  to -1 to 1
-    y[y == 4] = -1
-    y[y == 9] = 1
+    y[y == num1] = -1
+    y[y == num2] = 1
     
  
-all_accuracys = defaultdict(list)
+all_accuracies = defaultdict(list)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state = 42)
     
@@ -87,7 +89,7 @@ for n in total_amount_of_data_intervals:
     
     
         # add the score
-    all_accuracys['Without DP'].append(1 - clf.score(X_test, y_test))
+    all_accuracies['Without DP'].append(1 - clf.score(X_test, y_test))
     #accur = num_correct_predictions / len(y_test)
     #print('accur', accur)
         
@@ -123,11 +125,12 @@ for n in total_amount_of_data_intervals:
         
         accur += num_correct_predictions / len(y_test)
         #print('accur perturb', accur/500)
-        all_accuracys['DP noise ' + str(epsilon)].append(1 - accur)
+        print('yo', all_accuracies)
+        all_accuracies['$\epsilon$ = ' + str(epsilon)].append(1 - accur)
         
 ############ Plot the results #################################
-for i in all_accuracys:
+for i in all_accuracies:
     print(i)
-    plt.plot(total_amount_of_data_intervals, all_accuracys[i], label = i, alpha = 0.75)
+    plt.plot(total_amount_of_data_intervals, all_accuracies[i], label = i, alpha = 0.75)
 plt.legend()
 plt.show()
