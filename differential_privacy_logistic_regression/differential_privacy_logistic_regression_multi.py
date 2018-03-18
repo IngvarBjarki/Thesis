@@ -6,18 +6,19 @@ Created on Mon Mar  5 19:03:57 2018
 """
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import pandas as pd
-import xlwt
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from collections import defaultdict
 from multiprocessing import Pool
+from stack_overflow import natural_keys
 
 sns.set_style('whitegrid')
-sns.set_palette(sns.color_palette("Reds_d", 9))
+#sns.set_palette(sns.color_palette("Reds_d", 9))
+sns.set_palette(sns.color_palette('Set1', 9))
 
 def main(all_args):
     
@@ -29,7 +30,7 @@ def main(all_args):
 
     X, y, total_amount_of_data_in_interval, test_size, dimensionality = all_args
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_size)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_size, shuffle = True)
 
     regularization_constant = 5
     num_rounds_to_avg = 1000
@@ -74,9 +75,8 @@ def main(all_args):
         
         # add the score
         all_accuracies['Without DP'].append(1 - clf.score(X_test, y_test))
-        all_weights[str(n)] = (weights)
-        #accur = num_correct_predictions / len(y_test)
-       
+        all_weights[str(n)] = (abs(weights))
+        
             
         ############# add differential privacy #########################
         
@@ -107,16 +107,13 @@ def main(all_args):
                         num_correct_predictions += 1
             
                 
+                total_noise += sum(abs(noise)) # vantar liklega abs gildinn
                 accur += num_correct_predictions / len(y_test)
-                total_noise += sum(noise)
 
             # first index has the lowest n and then it increases
             all_accuracies['$\epsilon$ = ' + str(epsilon)].append(1 - accur / num_rounds_to_avg)
             avg_noise_for_each_n['noise eps = ' + str(epsilon)].append(total_noise / num_rounds_to_avg)
             #all_noise_and_weights['weights eps = ' + str(epsilon)].append()
-    print('HALLLOOOO!!!!!!!!')
-    print(all_weights)
-    print('/n')
     return (all_accuracies, avg_noise_for_each_n, all_weights)
             
 if __name__ == '__main__':
@@ -152,11 +149,12 @@ if __name__ == '__main__':
     total_amount_of_data_in_interval = np.cumsum(total_amount_of_data)
     
     # Lets do multi-threading to speed things up!
-    num_instances = 7
+    num_instances = 8
     p = Pool(4)
     # BREYTA HER!!!
     args = [(X, y, total_amount_of_data_in_interval, test_size, dimensionality)] * num_instances
     results_and_weights_perturb = p.map(main, args)
+
 
     # get three list out of a list with tuples of three
     results, noise, all_weights = zip(*results_and_weights_perturb)
@@ -175,7 +173,7 @@ if __name__ == '__main__':
     
     for result in sorted(average_results):
         average_results[result] /= num_instances
-        ax.plot(total_amount_of_data_in_interval, average_results[result], label = result, alpha=0.6)
+        ax.plot(total_amount_of_data_in_interval, average_results[result], label = result)
     
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     # Shrink current axis by 25%
@@ -190,8 +188,6 @@ if __name__ == '__main__':
     plt.show()
 
     
-    print('\n\n')
-    print(noise[0]['noise eps = 0.0005'])
     
     #%%
     ###################### write statistics to excel for generating table in latex ##################
@@ -206,8 +202,8 @@ if __name__ == '__main__':
     pandas_values_mean.append(list(total_amount_of_data_in_interval))
     pandas_values_var.append(list(total_amount_of_data_in_interval))
     
-    print('Lets analys the weights..! \n')
-    print('\n')
+    #print('Lets analys the weights..! \n')
+    #print('\n')
     
 
     # Lets average all the instances of the weights, we know that each list inside all_weights
@@ -220,14 +216,10 @@ if __name__ == '__main__':
     for key in averaged_weights:
         averaged_weights[key] /= num_instances
             
-    print('ALRIGHTY!!!!!')
-    # Collect the data in list so we can build pandas data frame
+    # Collect the data for each n in list so we can build pandas data frame
     weights_means = []
     weights_var = []
     for key in sorted(averaged_weights):
-        #print(key, np.mean(value), np.var(value))
-        #sheet.write(1 + i, 1, np.mean(value))
-        #sheet.write(1 + i, 16, np.var(value))
         value = averaged_weights[key]
         weights_means.append(np.mean(value))
         weights_var.append(np.var(value))
@@ -236,29 +228,20 @@ if __name__ == '__main__':
     pandas_values_var.append(weights_var)
 
     
-    print('\nLets analys the noise!\n')
     
-    # https://stackoverflow.com/questions/5967500/how-to-correctly-sort-a-string-with-a-number-inside
-    import re
-    def atoi(text):
-        return int(text) if text.isdigit() else text
-    
-    def natural_keys(text):
-        '''
-        alist.sort(key=natural_keys) sorts in human order
-        http://nedbatchelder.com/blog/200712/human_sorting.html
-        (See Toothy's implementation in the comments)
-        '''
-        return [ atoi(c) for c in re.split('(\d+)', text) ]
-
+    #### Lets analyse the Noise ###
+    i = 0
     averaged_noise = defaultdict(list)
     for item in noise:
-        for key, values in item.items():
+        for key in sorted(item):
+            values = item[key]
             for n, value in enumerate(values):   
                 new_key = 'n = ' + str(total_amount_of_data_in_interval[n]) + ' ' + key
-                averaged_noise[new_key].append(value)
+                current_key = i
+                averaged_noise[new_key].append({'instance': new_key,'value': value})
+                i += 1
     
-    
+    # WEIGHTS NEEDS TO BE AT THE BACK.. liklega einhvad pandas dlmi
     # transpose the pandas lists so they are in the correct order such that
     # each list is N, weights
     pandas_values_mean = list(map(list, zip(*pandas_values_mean)))
@@ -267,17 +250,18 @@ if __name__ == '__main__':
     # calculate the statistics for the noise/epsilons
     j, n_index = 0, 0
     # we loop thorugh all epsilons for each n
-    for key in sorted(averaged_noise, key=natural_keys):
-        print(key, j)
-        pandas_values_mean[n_index].append(np.mean(averaged_noise[key]))
-        pandas_values_var[n_index].append(np.var(averaged_noise[key]))
+    for key in sorted(averaged_noise):
+        print(key)
+        print(averaged_noise[key][0]['instance'])
+        pandas_values_mean[n_index].append(np.mean([res['value'] for res in averaged_noise[key]]))#averaged_noise[key]['value']))
+        pandas_values_var[n_index].append(np.var( [res['value'] for res in averaged_noise[key]]))#averaged_noise[key]['value']))
         if j == len(epsilons) - 1:
-            print('heos')
+            #print('heos')
             j = 0
             n_index += 1
         else:
             j += 1
-    print('DONE')
+    #print('DONE')
     
     # FOR PANDAS -- theses are the column names
     names = ['N', 'Weights'] + ['$\epsilon = {}$'.format(epsilon) for epsilon in epsilons]
@@ -286,20 +270,30 @@ if __name__ == '__main__':
     
     df_means = pd.DataFrame(pandas_values_mean, columns = names)
     df_vars = pd.DataFrame(pandas_values_var, columns = names)
+
+    # now we change the order in the 
     
     # make box plot of the means and the variances
-    ax = sns.boxplot(data=df_means[names[1:]], palette = 'Set3') # exclude the N's
-    ax.set_xticklabels(rotation=30)
-    ax = sns.boxplot(data=df_vars[names[1:]], palette = 'Set3')
-    ax.set_xticklabels(rotation=30) # ef failar plt.xticks(rotation=45)
-    
+    ax = sns.boxplot(data=df_means[names[1:]], palette = 'Set1') # exclude the N's
+    #ax.set_xticklabels(rotation=30)
+    plt.xticks(rotation=45)
+    plt.title('Mean')
+    plt.show()
+    ax = sns.boxplot(data=df_vars[names[1:]], palette = 'Set1')
+    plt.xticks(rotation=45)#ax.set_xticklabels(rotation=30) # ef failar plt.xticks(rotation=45)
+    plt.title('Variance')
+    plt.show()
     # make a bar plot of the sum of the means and variances
     #!!! gaeti gert rauda linu efst med maxinu svi tad sjaist vel hvad tetta er langt fra
-    ax = sns.barplot(data=df_means[names[1:]], palette = 'Set3') # exclude the N's
-    ax.set_xticklabels(rotation=30)
-    ax = sns.barplot(data=df_vars[names[1:]], palette = 'Set3')
-    ax.set_xticklabels(rotation=30) # ef failar plt.xticks(rotation=45)
-    
+    # TILLA AD SUMMA ALL NOTA  estimator=sum tarf ad fa abs sum
+    ax = sns.barplot(data=df_means[names[1:]].abs(), palette = 'Set1', estimator=sum) # exclude the N's
+    plt.xticks(rotation=45)#ax.set_xticklabels(rotation=30)
+    plt.title('Means')
+    plt.show()
+    ax = sns.barplot(data=df_vars[names[1:]].abs(), palette = 'Set1', estimator=sum)
+    plt.xticks(rotation=45)#ax.set_xticklabels(rotation=30) # ef failar plt.xticks(rotation=45)
+    plt.title('Variance')
+    plt.show()
     
     # save the two dataframes as a table in excel
     writer = pd.ExcelWriter('output.xlsx')
@@ -308,23 +302,8 @@ if __name__ == '__main__':
     writer.save()
     
     
-    '''
-    i, j = 1, 0 # i for row j for col
-    for key in sorted(averaged_noise, key=natural_keys):
-        print(i, j)
-        sheet.write(i, 2 + j, np.mean(averaged_noise[key]))
-        sheet.write(i, 17 + j, np.var(averaged_noise[key]))
-        if j == len(epsilons) - 1:
-            i += 1
-            j = 0
-            
-        else:
-            j+= 1
-        '''
+
  
-    
-  
-    
-    # Lets do box plots of the weights and the noise of all the 
+     
     
     
