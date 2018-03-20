@@ -12,6 +12,10 @@ from numba import jit
 from functions import sigmoid
 
 
+
+###### This module can be imported into the differential_privacy_logistic_regresion_multi module      ############
+###### To get the heart of the program compiled with numba, however, I expirence only small amount    ############
+###### of increase in speed, so in light of simplisity a chose to use the main func inside the module ############
 @jit
 def main_numba(all_args):
 
@@ -22,7 +26,7 @@ def main_numba(all_args):
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_size, shuffle = True)
 
-    regularization_constant = 5
+    regularization_constant = 0.2
     num_rounds_to_avg = 1000
     
     
@@ -31,8 +35,8 @@ def main_numba(all_args):
     # we use tuple because lambda functions are not pickable- thus dont work with multiprocessing -uses que
     all_weights = defaultdict(tuple)
     for n in total_amount_of_data_in_interval:
-          
-        clf = LogisticRegression(penalty="l2", C = 1 / regularization_constant)
+        # C is the inverse of the regularization strength so we turn it to get the corr value
+        clf = LogisticRegression(penalty="l2", C =  1 / regularization_constant)
         clf.fit(X_train[:n], y_train[:n])
         if debugg:
             print(clf.score(X_test, y_test))
@@ -70,7 +74,7 @@ def main_numba(all_args):
             
         ############# add differential privacy #########################
         
-        sensitivity = 2 / (len(y_train) * regularization_constant)
+        sensitivity = 2 / (len(y_train) *  regularization_constant)
         epsilons = (0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 3)
         for epsilon in epsilons:
             accur = 0

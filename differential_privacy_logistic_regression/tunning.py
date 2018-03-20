@@ -64,6 +64,6 @@ for key, value in weight_decays.items():
     all_weight_decays.append(value['best'])
     
 most_comon_weight_decays = Counter(all_weight_decays)
-value, times = most_comon_weight_decays.most_common(1)
-print('The most comon or one of the most common weight decay is {} and happens {} out of {} times'.format(value, times, num_splits)
+value, times = most_comon_weight_decays.most_common(1)[0]
+print('The most comon or one of the most common weight decay is {} and happens {} out of {} times'.format(value, times, num_splits))
     

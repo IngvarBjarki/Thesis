@@ -17,6 +17,7 @@ from collections import defaultdict
 from multiprocessing import Pool
 from numba import jit
 from numba_module import main_numba
+from functions import sigmoid
 sns.set_style('whitegrid')
 #sns.set_palette(sns.color_palette("Reds_d", 9))
 sns.set_palette(sns.color_palette('Set1', 9))
@@ -25,8 +26,8 @@ sns.set_palette(sns.color_palette('Set1', 9))
 
 #@jit
 def main(all_args):
-    def sigmoid(x):
-        return 1 / (1 + np.exp(-x))
+    #def sigmoid(x):
+        #return 1 / (1 + np.exp(-x))
     
     debugg = False
 
@@ -34,9 +35,9 @@ def main(all_args):
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_size, shuffle = True)
 
-    regularization_constant = 1 / 5
-    num_rounds_to_avg = 1000
-    
+    regularization_constant = 5
+    num_rounds_to_avg = 1
+    # p;la i regularization constant
     
     all_accuracies = defaultdict(list)
     avg_noise_for_each_n = defaultdict(list)
@@ -44,7 +45,7 @@ def main(all_args):
     all_weights = defaultdict(tuple)
     for n in total_amount_of_data_in_interval:
           
-        clf = LogisticRegression(penalty="l2", C=regularization_constant)
+        clf = LogisticRegression(penalty="l2", C= 1 / regularization_constant)
         clf.fit(X_train[:n], y_train[:n])
         if debugg:
             print(clf.score(X_test, y_test))
@@ -152,11 +153,11 @@ if __name__ == '__main__':
     
     t1 = time.time()
     # Lets do multi-threading to speed things up!
-    num_instances = 8
-    p = Pool(4)
+    num_instances = 10
+    p = Pool(1)
     # BREYTA HER!!!
     args = [(X, y, total_amount_of_data_in_interval, test_size, dimensionality)] * num_instances
-    results_and_weights_perturb = p.map(main_numba, args)
+    results_and_weights_perturb = p.map(main, args)
     p.close()
     p.join()
 
@@ -233,8 +234,6 @@ if __name__ == '__main__':
     
     # transpose the pandas lists so they are in the correct order such that
     # each list is N, weights
-    #pandas_values_mean = list(map(list, zip(*pandas_values_mean)))
-    #pandas_values_var = list(map(list, zip(*pandas_values_var)))
 
     # calculate the statistics for the noise/epsilons
     j, n_index = 0, 0
@@ -271,7 +270,7 @@ if __name__ == '__main__':
 
 
 
-    # FOR PANDAS -- theses are the column names MUNNA AD LAGA
+    # FOR PANDAS 
     names = ['N'] + ['$\epsilon = {}$'.format(epsilon) for epsilon in epsilons] + ['Weights']
     
     df_means = pd.DataFrame(pandas_values_mean, columns = names)
@@ -283,33 +282,33 @@ if __name__ == '__main__':
     ax = sns.boxplot(data=df_means[names[1:]], palette = 'Set1') # exclude the N's
     #ax.set_xticklabels(rotation=30)
     plt.xticks(rotation=45)
+    plt.title('Means of the noise and the weights')
+    plt.yscale('log')
     plt.title('Mean')
     plt.show()
     ax = sns.boxplot(data=df_vars[names[1:]], palette = 'Set1')
     plt.xticks(rotation=45)#ax.set_xticklabels(rotation=30) # ef failar plt.xticks(rotation=45)
-    plt.title('Variance')
+    plt.title('Variance of the noise and the weights')
+    plt.yscale('log')
     plt.show()
     # make a bar plot of the sum of the means and variances
     #!!! gaeti gert rauda linu efst med maxinu svi tad sjaist vel hvad tetta er langt fra
     # TILLA AD SUMMA ALL NOTA  estimator=sum tarf ad fa abs sum
     ax = sns.barplot(data=df_means[names[1:]].abs(), palette = 'Set1', estimator=sum, ci = None) # exclude the N's
+    plt.yscale('log')
     plt.xticks(rotation=45)#ax.set_xticklabels(rotation=30)
-    plt.title('Means')
+    plt.title('Total sum of the means of the weights and the noise')
     plt.show()
     ax = sns.barplot(data=df_vars[names[1:]].abs(), palette = 'Set1', estimator=sum, ci = None)
     plt.xticks(rotation=45)#ax.set_xticklabels(rotation=30) # ef failar plt.xticks(rotation=45)
-    plt.title('Variance')
+    plt.title('Total sum of the variance of the weights and the noise ')
+    plt.yscale('log')
     plt.show()
     
     # save the two dataframes as a table in excel
     writer = pd.ExcelWriter('output.xlsx')
-    df_means.to_excel(writer, 'Sheet1')
-    df_vars.to_excel(writer,  'Sheet2')
+    format_num = writer.add_format({'num_format': '0.0000'})
+    df_means.to_excel(writer, 'Sheet1', format_num)
+    df_vars.to_excel(writer,  'Sheet2', format_num)
     writer.save()
-    
-    
-
- 
-     
-    
     
