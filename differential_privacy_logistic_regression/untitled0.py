@@ -1,13 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Mar 19 20:41:41 2018
+Created on Tue Mar 20 21:08:59 2018
 
 @author: helga
 """
+import seaborn as sns
+import matplotlib.pyplot as plt
+import itertools
+sns.set_style('whitegrid')
+#sns.set_palette(sns.color_palette("Reds_d", 9))
+num = 9
 
-from mnist import MNIST
-path = r"C:\Users\helga\OneDrive\Documents\Thesis\github\Thesis\python-mnist\data"
-mndata = MNIST(path)
-#path = r"C:\Users\helga\OneDrive\Documents\Thesis\github\Thesis\differential_privacy_logistic_regression\mnist\python-mnist"
-#mndata = MNIST(path)
-images, labels = mndata.load_training()
+sns.set_palette(sns.color_palette('Set1', num))
+
+y = range(num)
+palette = itertools.cycle(sns.color_palette())
+for i in range(num):
+    plt.plot(range(num), y, label = i)
+    y = [i + 1 for i in y]
+plt.legend()
+plt.show()
