@@ -8,16 +8,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
 
-
-X = np.linspace(-6,6,1000)
-y = [sigmoid(x) for x in X]
+X = np.linspace(-1,1,10)
+X = [1, 0.75, 0.5, 0.25, 0, 0.25, 0.5, 0.75, 1]
+y = [abs(1 - x ) for x in X]
 
 sns.set_style('darkgrid')
 pal = sns.hls_palette(8, l=.3, s=.8)
 sns.set_palette(pal)
-plt.plot(X,y)
-plt.savefig('sigmoid.eps', format = 'eps')
+plt.plot(range(len(y)),y)
+#efig('lassin.eps', format = 'eps')
 plt.show()
