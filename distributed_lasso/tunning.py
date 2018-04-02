@@ -68,7 +68,7 @@ def main(args):
     total_amount_of_data = [int(num_samples/num_splits) for i in range(num_splits)] 
     total_amount_of_data_in_intervals = np.cumsum(total_amount_of_data)
     #!!! muna ad eyda!!!!!!!!!!!!!!!
-    total_amount_of_data_in_intervals = total_amount_of_data_in_intervals[0:-1:6]
+    #total_amount_of_data_in_intervals = total_amount_of_data_in_intervals[0:-1:6]
     
     
     # initialize dictonaries that contain information from the cross validation
@@ -300,25 +300,25 @@ if __name__ == '__main__':
     tunned_params = {'distributed':{}, 'single':{}, 'central':{}}
     for key in all_instances_distributed:
         parameters, error_rate = get_best_param(all_instances_distributed[key])
-        learning_rate, weight_decay = parameters
+        weight_decay, learning_rate = parameters
         # key needs to be string for the json object
-        tunned_params['distributed'][str(key)] = {'learning_rate': learning_rate, 'weight_decay': weight_decay, 'error_rate': error_rate}
+        tunned_params['distributed'][str(key)] = {'weight_decay': weight_decay, 'learning_rate': learning_rate, 'error_rate': error_rate}
     
     for key in all_instances_single:
         parameters, error_rate= get_best_param(all_instances_single[key])
-        learning_rate, weight_decay  = parameters
+        weight_decay, learning_rate  = parameters
         # key needs to be string for the json object
-        tunned_params['single'][str(key)] = {'learning_rate': learning_rate, 'weight_decay': weight_decay, 'error_rate': error_rate}
+        tunned_params['single'][str(key)] = {'weight_decay': weight_decay, 'learning_rate': learning_rate, 'error_rate': error_rate}
 
     for key in all_instances_central:
         parameters, error_rate= get_best_param(all_instances_central[key])
-        learning_rate, weight_decay = parameters
+        weight_decay, learning_rate = parameters
         # key needs to be string for the json object
-        tunned_params['central'][str(key)] = {'learning_rate': learning_rate, 'weight_decay': weight_decay, 'error_rate': error_rate}        
+        tunned_params['central'][str(key)] = {'weight_decay': weight_decay, 'learning_rate': learning_rate, 'error_rate': error_rate}        
 
         
     # load all the best parameters into json so we can easly acess them in our main program    
-    with open('parameters_tunned_new3_pink.json', 'w') as f:
+    with open('parameters_tunned_new3_pink2.json', 'w') as f:
         json.dump(tunned_params, f)
         
     print('data has been loaded to parameters.json')

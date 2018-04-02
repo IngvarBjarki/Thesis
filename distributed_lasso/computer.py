@@ -4,7 +4,6 @@ from optimization_algorithms import  get_gradient, gradientDescentLasso
 class Computer():
     def __init__(self, m):
         # m is the number of data points
-        self.ingvar = 10
         self.cost = 999999999 # due to minimzation
         self.m = m
     
@@ -22,7 +21,6 @@ class Computer():
     
     def lasso_gradiants(self, X, y, theta, learning_rate, num_rounds, weight_decay):
         return gradientDescentLasso(X, y, theta,
-    
                              learning_rate, self.m, num_rounds, weight_decay)
     def set_cost(self, cost):
         self.cost = cost

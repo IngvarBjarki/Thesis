@@ -31,7 +31,11 @@ def main(args):
     #X, y, num_splits = args
     #!!!!!!!X_train, X_test, y_train, y_test, X_train1, y_train1, X_train2, y_train2, total_amount_of_data_intervals = args
     X_train, y_train, X_test, y_test, num_splits, tunned_parameters = args
-     
+    
+
+    num_test_samples = len(y_test)
+    num_dimensions = len(X_train[0])
+    
     # we split to train and test before we do feature selection
     #X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
     
@@ -45,10 +49,10 @@ def main(args):
     total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
     
     #!!! muna ad eyda!!!!!!!!!!!!!!!
-    total_amount_of_data_intervals = total_amount_of_data_intervals[0:-1:6]
+    #total_amount_of_data_intervals = total_amount_of_data_intervals[0:-1:6]
     
     # now we perform the distributed lasso regression
-    num_rounds = 7000
+    num_rounds = 3000
     #weight_decay = 10**(-7) # for the lasso regression - they tried values from 0.0001-0.1
     #learning_rate = 10**(-3)
     #Gamma = lambda x: np.sign(x)*(abs(x) - weight_decay)
@@ -74,7 +78,7 @@ def main(args):
 
             
          # make the two computer centers that run the program
-        theta = np.zeros(len(X_train[0]))
+        theta = np.zeros(num_dimensions)
         computer_1 = Computer(m)
         computer_2 = Computer(m)
         learning_rate = tunned_parameters['distributed'][str(n)]['learning_rate']
@@ -89,22 +93,21 @@ def main(args):
             
             if is_converged_computer_1 or is_converged_computer_2:
                 # if either of the computers has converge we stopp
-                print('Number for rounds = {}'.format(i))
                 break
-                
+        print('Number for rounds = {}'.format(i))
         # Evaluate the model -- check for error rate
         total_correct_distributed = 0
-        for i in range(len(y_test)):
+        for i in range(num_test_samples):
             prediction = np.sign(np.dot(theta, X_test[i]))
             #print(prediction, y_test[i])
             if prediction == y_test[i]:
                 total_correct_distributed += 1
         
         #print('\ntotal correct distributed lasso: ', total_correct_distributed)
-        accuracies_distributed.append(1 - total_correct_distributed/len(y_test))
+        accuracies_distributed.append(1 - total_correct_distributed / num_test_samples)
         
     ############## If only one computer did the analysis on there own data ############################
-        theta = np.zeros(len(X_train[0]))
+        theta = np.zeros(num_dimensions)
         learning_rate = tunned_parameters['distributed'][str(n)]['learning_rate']
         weight_decay = tunned_parameters['distributed'][str(n)]['weight_decay']
         computer_1.set_cost = 0.0
@@ -113,17 +116,17 @@ def main(args):
         
         # Evaluate the model -- check for error rate
         total_correct_single = 0
-        for i in range(len(y_test)):
+        for i in range(num_test_samples):
             prediction = np.sign(np.dot(theta, X_test[i]))
             if prediction == y_test[i]:
                 total_correct_single += 1
         
         #print('\ntotal correct single computer: ', total_correct_single)
-        accuracies_single.append(1 - total_correct_single/len(y_test))
+        accuracies_single.append(1 - total_correct_single / num_test_samples)
     
     ############ If all data was at a centeralized location ###########################################
     
-        theta = np.zeros(len(X_train[0]))
+        theta = np.zeros(num_dimensions)
         learning_rate = tunned_parameters['distributed'][str(n)]['learning_rate']
         weight_decay = tunned_parameters['distributed'][str(n)]['weight_decay']
         computer_1.set_cost = 0.0
@@ -133,13 +136,13 @@ def main(args):
 
         # Evaluate the model -- check for error rate
         total_correct_all_data = 0
-        for i in range(len(y_test)):
+        for i in range(num_test_samples):
             prediction = np.sign(np.dot(theta, X_test[i]))
             if prediction == y_test[i]:
                 total_correct_all_data += 1
         
         #print('\ntotal correct - central location: ', total_correct_all_data)
-        accuracies_central.append(1 - total_correct_all_data/len(y_test))
+        accuracies_central.append(1 - total_correct_all_data / num_test_samples)
     print('Leaving..!.1')
     return {'distributed':np.array(accuracies_distributed),
            'single':np.array(accuracies_single),
@@ -195,7 +198,7 @@ if __name__ == '__main__':
     
     
     # load the parameters from the tunned model
-    with open('parameters_tunned_new3_pink.json') as f:
+    with open('parameters_tunned_new3_pink2.json') as f:
         tunned_parameters = json.load(f)
     
     print(tunned_parameters['distributed'].keys())
