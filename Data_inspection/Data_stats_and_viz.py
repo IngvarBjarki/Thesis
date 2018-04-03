@@ -23,7 +23,9 @@ X_train_four_or_nine = []
 y_train_four_or_nine = []
 X_train_zero_or_one = []
 y_train_zero_or_one = []
-with open('../../data/mnist_train.csv') as l:
+school = "C:/Users/s161294/OneDrive - Danmarks Tekniske Universitet/"
+home = '../../data/'
+with open(school + 'mnist_train.csv') as l:
     for i , line in enumerate(l):
         line = line.split(",")
         features = [float(i) for i in line[1:]]
@@ -42,7 +44,7 @@ with open('../../data/mnist_train.csv') as l:
 
 test = []
 test_names = []
-with open('../../data/mnist_test.csv') as l:
+with open(school + 'mnist_test.csv') as l:
     for i , line in enumerate(l):
         line = line.split(",")
         row = [int(line[0])] + [float(i) for i in line[1:]]
@@ -195,7 +197,17 @@ print(df_train['y'].value_counts())
 print('\n Categories in test set')
 print(df_test['y'].value_counts())
 
-
+#%%
+# create histogram of the number of times a value comes upp in pandas..
+###! spa i pixlunum!!!!
+sns.set_style("darkgrid")
+sns.distplot(np.asarray(X_train).flatten())
+plt.title('Number of pixels associated with there color value')
+plt.xlabel('color value')
+plt.ylabel('rate of number of pixels in each bin')
+plt.show()
+plt.hist(np.asarray(X_train).flatten(), bins = 254)
+plt.show()
 
 
 
