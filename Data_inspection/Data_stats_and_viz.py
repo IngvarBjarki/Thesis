@@ -24,8 +24,8 @@ y_train_four_or_nine = []
 X_train_zero_or_one = []
 y_train_zero_or_one = []
 school = "C:/Users/s161294/OneDrive - Danmarks Tekniske Universitet/"
-home = '../../data/'
-with open(school + 'mnist_train.csv') as l:
+home = "C:/Users/helga/OneDrive/Documents/Thesis/github/data/"#'../../data/'
+with open(home + 'mnist_train.csv') as l:
     for i , line in enumerate(l):
         line = line.split(",")
         features = [float(i) for i in line[1:]]
@@ -44,7 +44,7 @@ with open(school + 'mnist_train.csv') as l:
 
 test = []
 test_names = []
-with open(school + 'mnist_test.csv') as l:
+with open(home + 'mnist_test.csv') as l:
     for i , line in enumerate(l):
         line = line.split(",")
         row = [int(line[0])] + [float(i) for i in line[1:]]
@@ -209,6 +209,37 @@ plt.show()
 plt.hist(np.asarray(X_train).flatten(), bins = 254)
 plt.show()
 
+#%%
+# calculate the eculution distance from the mean
+sns.set_style("darkgrid")
+colors = ['#e6194b',
+          '#0082c8',
+          '#d2f53c',
+          '#3cb44b',
+          '#f032e6',
+          '#911eb4',
+          '#46f0f0',
+          '#f58231', 
+          '#008080',
+          '#ffe119']
+# find all the values that have specifict value..
+data = []
+#!!! g;inn gerdi mean i statinn fyrir sum i formulu..
+for digit in range(10):
+    df_digit = df_train.loc[df_train['y'] == digit]
+    means = np.array(df_digit[['X{}'.format(i) for i in range(784)]].mean())
+    digit_distance = (df_digit[['X{}'.format(i) for i in range(784)]].sub(means)).pow(2).sum(1).pow(0.5)
+    data.append(digit_distance.tolist())
 
+sns.boxplot(data = data)
+plt.xlabel('digits')
+plt.ylabel('Eculidian distance')
+plt.title('Eulidian distance to mean digit')
+plt.show()
 
+sns.violinplot(data = data)
+plt.xlabel('digits')
+plt.ylabel('Eculidian distance')
+plt.title('Eulidian distance to mean digit')
+plt.show()
 
