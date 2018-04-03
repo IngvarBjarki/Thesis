@@ -47,14 +47,14 @@ def main(args):
     # in each itreation we use different amount of data to see how the model improvese with increased data    
     total_amount_of_data = [int(len(y_train)/num_splits) for i in range(num_splits)] 
     total_amount_of_data_intervals = np.cumsum(total_amount_of_data)
-    
+    total_amount_of_data_intervals = [2000, 4000, 7000, len(y_train)]
     #!!! muna ad eyda!!!!!!!!!!!!!!!
     #total_amount_of_data_intervals = total_amount_of_data_intervals[0:-1:6]
     
     # now we perform the distributed lasso regression
     num_rounds = 3000
-    #weight_decay = 10**(-7) # for the lasso regression - they tried values from 0.0001-0.1
-    #learning_rate = 10**(-3)
+    weight_decay = 10**(-9) # for the lasso regression - they tried values from 0.0001-0.1
+    learning_rate = 10**(-1)
     #Gamma = lambda x: np.sign(x)*(abs(x) - weight_decay)
     
     accuracies_distributed = []
@@ -63,7 +63,7 @@ def main(args):
     for n in total_amount_of_data_intervals:
         #print('n',n)
         
-            # split the data differently according to if it is odd or even
+        # split the data differently according to if it is odd or even
         if len(X_train) % 2 == 0:
             m = int(n / 2)
             # we split the data for the two computers
@@ -81,8 +81,9 @@ def main(args):
         theta = np.zeros(num_dimensions)
         computer_1 = Computer(m)
         computer_2 = Computer(m)
-        learning_rate = tunned_parameters['distributed'][str(n)]['learning_rate']
-        weight_decay = tunned_parameters['distributed'][str(n)]['weight_decay']
+        
+        #learning_rate = tunned_parameters['distributed'][str(n)]['learning_rate']
+        #weight_decay = tunned_parameters['distributed'][str(n)]['weight_decay']
         Gamma = lambda x: np.sign(x)*(abs(x) - weight_decay)
         #print('Iteration n:',n)       
         for i in range(num_rounds):
@@ -91,8 +92,8 @@ def main(args):
             total_gradients = computer_1_gradient + computer_2_gradient
             theta  =  Gamma(theta - learning_rate * total_gradients)
             
-            if is_converged_computer_1 or is_converged_computer_2:
-                # if either of the computers has converge we stopp
+            if is_converged_computer_1 and is_converged_computer_2:
+                #!!! if either of the computers has converge we stopp
                 break
         print('Number for rounds = {}'.format(i))
         # Evaluate the model -- check for error rate
@@ -103,13 +104,14 @@ def main(args):
             if prediction == y_test[i]:
                 total_correct_distributed += 1
         
-        #print('\ntotal correct distributed lasso: ', total_correct_distributed)
+        print('\ntotal correct distributed lasso: ', total_correct_distributed)
+        print('\nlen(X_train1): ', len(X_train1))
         accuracies_distributed.append(1 - total_correct_distributed / num_test_samples)
         
     ############## If only one computer did the analysis on there own data ############################
         theta = np.zeros(num_dimensions)
-        learning_rate = tunned_parameters['distributed'][str(n)]['learning_rate']
-        weight_decay = tunned_parameters['distributed'][str(n)]['weight_decay']
+        #learning_rate = tunned_parameters['distributed'][str(n)]['learning_rate']
+        #weight_decay = tunned_parameters['distributed'][str(n)]['weight_decay']
         computer_1.set_cost = 0.0
         theta = computer_1.lasso_gradiants(X_train1, y_train1, theta,
                                  learning_rate, num_rounds, weight_decay) 
@@ -121,14 +123,14 @@ def main(args):
             if prediction == y_test[i]:
                 total_correct_single += 1
         
-        #print('\ntotal correct single computer: ', total_correct_single)
+        print('\ntotal correct single computer: ', total_correct_single)
         accuracies_single.append(1 - total_correct_single / num_test_samples)
     
     ############ If all data was at a centeralized location ###########################################
     
         theta = np.zeros(num_dimensions)
-        learning_rate = tunned_parameters['distributed'][str(n)]['learning_rate']
-        weight_decay = tunned_parameters['distributed'][str(n)]['weight_decay']
+        #learning_rate = tunned_parameters['distributed'][str(n)]['learning_rate']
+        #weight_decay = tunned_parameters['distributed'][str(n)]['weight_decay']
         computer_1.set_cost = 0.0
         computer_1.set_m = 2*m
         theta = computer_1.lasso_gradiants(X_train[:2*m], y_train[:2*m], theta,
@@ -141,7 +143,7 @@ def main(args):
             if prediction == y_test[i]:
                 total_correct_all_data += 1
         
-        #print('\ntotal correct - central location: ', total_correct_all_data)
+        print('\ntotal correct - central location: ', total_correct_all_data)
         accuracies_central.append(1 - total_correct_all_data / num_test_samples)
     print('Leaving..!.1')
     return {'distributed':np.array(accuracies_distributed),
@@ -151,7 +153,7 @@ def main(args):
 
 if __name__ == '__main__':
 
-    
+    #!!! passa
     num1 = 4
     num2 = 9
     
@@ -198,7 +200,7 @@ if __name__ == '__main__':
     
     
     # load the parameters from the tunned model
-    with open('parameters_tunned_new3_pink2.json') as f:
+    with open('parameters_tunned_new3_pink3.json') as f:
         tunned_parameters = json.load(f)
     
     print(tunned_parameters['distributed'].keys())
@@ -234,9 +236,9 @@ if __name__ == '__main__':
     # here we do some number of total instances to average and see how the model
     # behaves, this is due to the randomness in the train, test split
     t1 = time.time()
-    total_instances = 10
+    total_instances = 3
     p = Pool(total_instances)
-    num_splits = 30
+    num_splits = 4
     args = [(X_train, y_train, X_test, y_test, num_splits, tunned_parameters)]*total_instances#[(X_train, X_test, y_train, y_test, X_train1, y_train1, X_train2, y_train2, total_amount_of_data_intervals)]*total_instances
     results = p.map(main, args)
     p.close()

@@ -1,0 +1,1 @@
+{"distributed": {"weight_decay": 1e-12, "learning_rate": 0.1, "error_rate": 0.056907568185797716}, "single": {"weight_decay": 1e-12, "learning_rate": 0.1, "error_rate": 0.06114805478522154}, "central": {"weight_decay": 1e-12, "learning_rate": 0.1, "error_rate": 0.0541090174564703}}

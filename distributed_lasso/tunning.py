@@ -98,8 +98,8 @@ def main(args):
                 error_rates_distributed = []
                 error_rates_single = []
                 error_rates_central = []
-                
-                for train_index, test_index in kf.split(X):
+                # spurning med tehtta vegna tess ad testid eykst alltaf......
+                for train_index, test_index in kf.split(X): # spurnning hvort vid eigum ad hafa bara X[:n]
                     X_train, X_test = X[train_index], X[test_index]
                     y_train, y_test = y[train_index], y[test_index]
                     
@@ -258,7 +258,7 @@ if __name__ == '__main__':
     t1 = time.time()
     total_instances = 2#45 
     p = Pool(total_instances)
-    num_splits = 30
+    num_splits = 3
     args = [(X_train, y_train, num_splits)]*total_instances#[(X_train, X_test, y_train, y_test, X_train1, y_train1, X_train2, y_train2, total_amount_of_data_intervals)]*total_instances
     result = p.map(main, args)
     
@@ -278,13 +278,13 @@ if __name__ == '__main__':
     
     
     all_instances_single = defaultdict(lambda: defaultdict(list))
-    for i, item in enumerate(distributed):
+    for i, item in enumerate(single):
         for key in item:
             all_instances_single[key]['error_rates'] += single[i][key]['error_rates']
             all_instances_single[key]['parameters'] += list(zip(single[i][key]['weight_decays'], single[i][key]['learning_rates']))
     
     all_instances_central= defaultdict(lambda: defaultdict(list))
-    for i, item in enumerate(distributed):
+    for i, item in enumerate(central):
         for key in item:
             all_instances_central[key]['error_rates'] += central[i][key]['error_rates']
             all_instances_central[key]['parameters'] += list(zip(central[i][key]['weight_decays'], central[i][key]['learning_rates']))
@@ -318,7 +318,7 @@ if __name__ == '__main__':
 
         
     # load all the best parameters into json so we can easly acess them in our main program    
-    with open('parameters_tunned_new3_pink2.json', 'w') as f:
+    with open('parameters_tunned_new3_pink3.json', 'w') as f:
         json.dump(tunned_params, f)
         
     print('data has been loaded to parameters.json')

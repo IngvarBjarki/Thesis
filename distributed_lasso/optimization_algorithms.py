@@ -50,7 +50,7 @@ def get_gradient(x, y, theta, n, previous_cost = 9999.9, tol = 10**(-4)):
     cost = np.sum(loss ** 2) / (2 * n)
     gradient = np.dot(xTrans, loss) / n
     #print('**cost:', cost)
-    if abs(cost - previous_cost) <tol:
+    if abs(cost - previous_cost) < tol:
         return(True, gradient, cost)
     else:
         return(False, gradient, cost)
