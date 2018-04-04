@@ -129,6 +129,9 @@ plt.show()
 #%%
 # find the outleirs and plot them
 num_bad_images = 3
+counter = 1
+
+
 for digit in range(10):
     for i in range(num_bad_images):
         df_digit = df_train.loc[df_train['y'] == digit]
@@ -137,9 +140,10 @@ for digit in range(10):
         num = num.reshape((28, 28))
         print('digit {}'.format(digit))
         plt.imshow(num, cmap = 'gray')
-        plt.show()
+        plt.subplot(10, 3, counter)
         del data_eculidian_distance[digit][index]
-
+        counter += 1
+plt.show()
 
 #%%
 # lets do PCA
