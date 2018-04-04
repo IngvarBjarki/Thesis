@@ -25,7 +25,7 @@ X_train_zero_or_one = []
 y_train_zero_or_one = []
 school = "C:/Users/s161294/OneDrive - Danmarks Tekniske Universitet/"
 home = "C:/Users/helga/OneDrive/Documents/Thesis/github/data/"#'../../data/'
-with open(school + 'mnist_train.csv') as l:
+with open(home + 'mnist_train.csv') as l:
     for i , line in enumerate(l):
         line = line.split(",")
         features = [float(i) for i in line[1:]]
@@ -44,7 +44,7 @@ with open(school + 'mnist_train.csv') as l:
 
 test = []
 test_names = []
-with open(school + 'mnist_test.csv') as l:
+with open(home + 'mnist_test.csv') as l:
     for i , line in enumerate(l):
         line = line.split(",")
         row = [int(line[0])] + [float(i) for i in line[1:]]
@@ -128,14 +128,17 @@ plt.show()
 
 #%%
 # find the outleirs and plot them
-
-index = data_eculidian_distance[0].index(max(data_eculidian_distance[0]))
-
-
-
-pxles = np.array(X_train[i])
-pxles = pxles.reshape((28, 28))
-
+num_bad_images = 3
+for digit in range(10):
+    for i in range(num_bad_images):
+        df_digit = df_train.loc[df_train['y'] == digit]
+        index = data_eculidian_distance[digit].index(max(data_eculidian_distance[digit]))
+        num = np.asarray(df_digit.iloc[index][1:])
+        num = num.reshape((28, 28))
+        print('digit {}'.format(digit))
+        plt.imshow(num, cmap = 'gray')
+        plt.show()
+        del data_eculidian_distance[digit][index]
 
 
 #%%
@@ -237,7 +240,7 @@ for i in range(num_components):
     names.append('pca{}'.format(i+1))
 
 df_pca = pd.DataFrame(train_pca_ones, columns = names)
-
+node
 
 #sns.pairplot(df_pca, hue="y")
 sns.lmplot("pca1", "pca2", data=df_pca, hue='y', fit_reg=False, palette = [colors[0], colors[1]])
