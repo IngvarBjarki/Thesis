@@ -25,7 +25,7 @@ X_train_zero_or_one = []
 y_train_zero_or_one = []
 school = "C:/Users/s161294/OneDrive - Danmarks Tekniske Universitet/"
 home = "C:/Users/helga/OneDrive/Documents/Thesis/github/data/"#'../../data/'
-with open(home + 'mnist_train.csv') as l:
+with open(school + 'mnist_train.csv') as l:
     for i , line in enumerate(l):
         line = line.split(",")
         features = [float(i) for i in line[1:]]
@@ -44,7 +44,7 @@ with open(home + 'mnist_train.csv') as l:
 
 test = []
 test_names = []
-with open(home + 'mnist_test.csv') as l:
+with open(school + 'mnist_test.csv') as l:
     for i , line in enumerate(l):
         line = line.split(",")
         row = [int(line[0])] + [float(i) for i in line[1:]]
@@ -115,13 +115,15 @@ for digit in range(10):
 sns.boxplot(data = data_eculidian_distance)
 plt.xlabel('digits')
 plt.ylabel('Eculidian distance')
-plt.title('Eulidian distance to mean digit')
+plt.title('Eulidian distance to typical digit')
 plt.show()
 
 sns.violinplot(data = data_eculidian_distance)
 plt.xlabel('digits')
 plt.ylabel('Eculidian distance')
-plt.title('Eulidian distance to mean digit')
+plt.title('Eulidian distance to typical digit')
+
+plt.savefig('violinplot_eculidian_dist.eps', format='eps')
 plt.show()
 
 
@@ -129,6 +131,8 @@ plt.show()
 #%%
 # find the outleirs and plot them
 num_bad_images = 3
+counter = 1
+fig = plt.figure(figsize=(num_bad_images,10))
 for digit in range(10):
     for i in range(num_bad_images):
         df_digit = df_train.loc[df_train['y'] == digit]
@@ -136,10 +140,15 @@ for digit in range(10):
         num = np.asarray(df_digit.iloc[index][1:])
         num = num.reshape((28, 28))
         print('digit {}'.format(digit))
-        plt.imshow(num, cmap = 'gray')
-        plt.show()
-        del data_eculidian_distance[digit][index]
+        ax = fig.add_subplot(10, num_bad_images, counter)
+        ax.imshow(num, cmap = 'gray')
+        plt.axis('off')
+        counter +=1
+        #plt.show()
 
+        del data_eculidian_distance[digit][index]
+#plt.savefig("test.png", bbox_inches='tight')
+plt.show()
 
 #%%
 # lets do PCA
