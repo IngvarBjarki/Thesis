@@ -66,12 +66,30 @@ for i, target in enumerate(y_train):
         pxles = np.array(X_train[i])
         pxles = pxles.reshape((28, 28))        
         plt.imshow(pxles, cmap = 'gray')
+        plt.axis('off')
         plt.savefig('number_{}.eps'.format(target), format='eps')
         plt.show()
         images_to_show.remove(target)
 
-
-
+#%%
+# plot the images to see how they look into a subplot
+fig = plt.figure(figsize=(5,2))
+counter = 1
+images_to_show = list(range(10))
+for i, target in enumerate(y_train):
+    if target in images_to_show:
+        sns.set_style("ticks")
+        pixles = np.array(X_train[i])
+        pixles = pixles.reshape((28, 28))
+        ax = fig.add_subplot(2, 5, 1 + target)        
+        ax.imshow(pixles, cmap = 'gray')
+        plt.axis('off')
+        
+        images_to_show.remove(target)
+fig.tight_layout()
+plt.show()
+        
+        
 #%%
 # find out how many data points are in each category of the targets
 print('Categories in train set')
@@ -83,10 +101,11 @@ print(df_test['y'].value_counts())
 # create histogram of the number of times a value comes upp in pandas..
 ###! spa i pixlunum!!!!
 sns.set_style("darkgrid")
-sns.distplot(np.asarray(X_train).flatten())
-plt.title('Number of pixels associated with there color value')
+sns.distplot(np.asarray(X_train).flatten(), color =  sns.hls_palette(8, l=.3, s=.8)[0])
+plt.title('The density of pixels color values')
 plt.xlabel('color value')
-plt.ylabel('rate of number of pixels in each bin')
+plt.ylabel('ratio of pixels in each bin')
+plt.savefig('density_pixel_colors.eps', format='eps')
 plt.show()
 plt.hist(np.asarray(X_train).flatten(), bins = 254)
 plt.show()
@@ -115,22 +134,24 @@ for digit in range(10):
 sns.boxplot(data = data_eculidian_distance)
 plt.xlabel('digits')
 plt.ylabel('Eculidian distance')
-plt.title('Eulidian distance to mean digit')
+plt.title('Eulidian distance to typical digit')
 plt.show()
 
 sns.violinplot(data = data_eculidian_distance)
 plt.xlabel('digits')
 plt.ylabel('Eculidian distance')
-plt.title('Eulidian distance to mean digit')
+plt.title('Eulidian distance to typical digit')
+
+#plt.savefig('violinplot_eculidian_dist.eps', format='eps')
 plt.show()
 
 
 
 #%%
 # find the outleirs and plot them
-num_bad_images = 3
+num_bad_images = 5
 counter = 1
-
+fig = plt.figure(figsize=(num_bad_images,10))
 
 for digit in range(10):
     for i in range(num_bad_images):
@@ -139,10 +160,15 @@ for digit in range(10):
         num = np.asarray(df_digit.iloc[index][1:])
         num = num.reshape((28, 28))
         print('digit {}'.format(digit))
-        plt.imshow(num, cmap = 'gray')
-        plt.subplot(10, 3, counter)
+
+        ax = fig.add_subplot(10, num_bad_images, counter)
+        ax.imshow(num, cmap = 'gray')
+        plt.axis('off')
+        counter +=1
+
         del data_eculidian_distance[digit][index]
-        counter += 1
+fig.tight_layout()
+plt.savefig('bad_images.eps', format='eps')
 plt.show()
 
 #%%
@@ -187,7 +213,7 @@ df_pca = pd.DataFrame(train_pca_ones, columns = names)
 
 
 #sns.pairplot(df_pca, hue="y")
-sns.lmplot("pca1", "pca2", data=df_pca, hue='y', fit_reg=False, palette = colors)
+sns.lmplot("pca1", "pca2", data=df_pca, hue='y', fit_reg=False)
 #plt.title('explained variance = {}'.format(sum(pca.explained_variance_ratio_)))
 plt.savefig('pca_plot_all.eps', format='eps')
 plt.show()
@@ -216,7 +242,7 @@ df_pca = pd.DataFrame(train_pca_ones, columns = names)
 
 
 #sns.pairplot(df_pca, hue="y")
-sns.lmplot("pca1", "pca2", data=df_pca, hue='y', fit_reg=False, palette = [colors[4], colors[9]])
+sns.lmplot("pca1", "pca2", data=df_pca, hue='y', fit_reg=False, palette = [sns.color_palette()[4], sns.color_palette()[9]])
 #plt.title('explained variance = {}'.format(sum(pca.explained_variance_ratio_)))
 plt.savefig('pca_plot_four_and_nine.eps', format='eps')
 plt.show()
@@ -244,24 +270,45 @@ for i in range(num_components):
     names.append('pca{}'.format(i+1))
 
 df_pca = pd.DataFrame(train_pca_ones, columns = names)
-node
+
 
 #sns.pairplot(df_pca, hue="y")
-sns.lmplot("pca1", "pca2", data=df_pca, hue='y', fit_reg=False, palette = [colors[0], colors[1]])
+sns.lmplot("pca1", "pca2", data=df_pca, hue='y', fit_reg=False, palette = [sns.color_palette()[0], sns.color_palette()[1]])
 #plt.title('explained variance = {}'.format(sum(pca.explained_variance_ratio_)))
 plt.savefig('pca_plot_zero_and_one.eps', format='eps')
 plt.show()
 
 
 #%%
-# the evalution of pca
-
-sns.set_style("ticks")
-pxles = np.array(train_pca[0])
-#pxles = pxles.reshape((28, 28))        
-plt.imshow(pxles, cmap = 'gray')
-plt.savefig('number_{}.eps'.format(target), format='eps')
+# explained variance between 4 and 9
+pca = PCA()
+pca.fit(X_train_four_or_nine)
+plt.plot(np.cumsum(pca.explained_variance_ratio_))
+plt.xlabel('Number of components')
+plt.ylabel('Explained variance')
+plt.title('Explained variance between 4 and 9')
 plt.show()
-images_to_show.remove(target)
 
+
+
+#%%
+# explained variance between 0 and 1
+X_train_zero_or_one = normalize(X_train_zero_or_one)
+pca = PCA()
+pca.fit(X_train_zero_or_one)
+plt.plot(np.cumsum(pca.explained_variance_ratio_))
+plt.xlabel('Number of components')
+plt.ylabel('Explained variance')
+plt.title('Explained variance between 0 and 1')
+plt.show()
+
+#%%
+# explained variance between all
+pca = PCA()
+pca.fit(X_train)
+plt.plot(np.cumsum(pca.explained_variance_ratio_))
+plt.xlabel('Number of components')
+plt.ylabel('Explained variance')
+plt.title('Explained variance between 4 and 9')
+plt.show()
 
