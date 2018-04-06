@@ -25,7 +25,7 @@ X_train_zero_or_one = []
 y_train_zero_or_one = []
 school = "C:/Users/s161294/OneDrive - Danmarks Tekniske Universitet/"
 home = "C:/Users/helga/OneDrive/Documents/Thesis/github/data/"#'../../data/'
-with open(home + 'mnist_train.csv') as l:
+with open(school + 'mnist_train.csv') as l:
     for i , line in enumerate(l):
         line = line.split(",")
         features = [float(i) for i in line[1:]]
@@ -44,7 +44,7 @@ with open(home + 'mnist_train.csv') as l:
 
 test = []
 test_names = []
-with open(home + 'mnist_test.csv') as l:
+with open(school + 'mnist_test.csv') as l:
     for i , line in enumerate(l):
         line = line.split(",")
         row = [int(line[0])] + [float(i) for i in line[1:]]
@@ -105,7 +105,7 @@ sns.distplot(np.asarray(X_train).flatten(), color =  sns.hls_palette(8, l=.3, s=
 plt.title('The density of pixels color values')
 plt.xlabel('color value')
 plt.ylabel('ratio of pixels in each bin')
-plt.savefig('density_pixel_colors.eps', format='eps')
+plt.savefig('density_pixel_colors.png', format='png')
 plt.show()
 plt.hist(np.asarray(X_train).flatten(), bins = 254)
 plt.show()
@@ -279,16 +279,6 @@ plt.savefig('pca_plot_zero_and_one.eps', format='eps')
 plt.show()
 
 
-#%%
-# explained variance between 4 and 9
-pca = PCA()
-pca.fit(X_train_four_or_nine)
-plt.plot(np.cumsum(pca.explained_variance_ratio_))
-plt.xlabel('Number of components')
-plt.ylabel('Explained variance')
-plt.title('Explained variance between 4 and 9')
-plt.show()
-
 
 
 #%%
@@ -296,19 +286,66 @@ plt.show()
 X_train_zero_or_one = normalize(X_train_zero_or_one)
 pca = PCA()
 pca.fit(X_train_zero_or_one)
-plt.plot(np.cumsum(pca.explained_variance_ratio_))
+explained_var = np.cumsum(pca.explained_variance_ratio_)
+plt.plot(range(1, len(explained_var) + 1), explained_var, label = '0 and 1')
+
+
+
+pca = PCA()
+pca.fit(X_train_four_or_nine)
+explained_var = np.cumsum(pca.explained_variance_ratio_)
+plt.plot(range(1, len(explained_var) + 1), explained_var, label = '4 and 9', color = sns.color_palette()[3])
+
+pca = PCA()
+pca.fit(X_train)
+plt.plot(np.cumsum(pca.explained_variance_ratio_), label = 'All numbers', color = sns.color_palette()[2])
+
+
 plt.xlabel('Number of components')
 plt.ylabel('Explained variance')
-plt.title('Explained variance between 0 and 1')
+plt.title('Explained variance')
+plt.yticks(np.arange(0.0, 1.1, 0.1))
+
+plt.legend(bbox_to_anchor=(1.05, 0.5), loc=2, borderaxespad=0.)
+
+plt.savefig('explained_variance.eps', format='eps')
+
 plt.show()
 
 #%%
-# explained variance between all
+# explained variance between 0 and 1
+fig = plt.figure(figsize=(5,3))
+ax = plt.subplot(111)
+
+X_train_zero_or_one = normalize(X_train_zero_or_one)
+pca = PCA()
+pca.fit(X_train_zero_or_one)
+explained_var = np.cumsum(pca.explained_variance_ratio_)
+ax.plot(range(1, len(explained_var) + 1), explained_var, label = '0 and 1')
+
+
+
+pca = PCA()
+pca.fit(X_train_four_or_nine)
+explained_var = np.cumsum(pca.explained_variance_ratio_)
+ax.plot(range(1, len(explained_var) + 1), explained_var, label = '4 and 9', color = sns.color_palette()[3])
+
 pca = PCA()
 pca.fit(X_train)
-plt.plot(np.cumsum(pca.explained_variance_ratio_))
+explained_var = np.cumsum(pca.explained_variance_ratio_)
+ax.plot(range(1, len(explained_var) + 1), explained_var, label = 'All numbers', color = sns.color_palette()[2])
+
+
 plt.xlabel('Number of components')
 plt.ylabel('Explained variance')
-plt.title('Explained variance between 4 and 9')
-plt.show()
+plt.title('Explained variance')
+plt.yticks(np.arange(0.0, 1.1, 0.1))
 
+box = ax.get_position()
+ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+plt.legend(bbox_to_anchor=(1.05, 0.5), loc=2, borderaxespad=0.)
+plt.savefig('explained_variance2.eps',  format='eps')
+#fig.savefig('explained_variance.eps',  format='eps', bbox_extra_artists=(lgd,), bbox_inches='tight')
+
+plt.show()
